@@ -43,7 +43,7 @@ parser.add_argument('--warmup', default=5, type=float,
                     help='warmup epochs (unlabeled data based)')
 parser.add_argument('--wdecay', default=5e-4, type=float,
                     help='weight decay')
-parser.add_argument('--nesterov', action='store_true',
+parser.add_argument('--nesterov', action='store_true', default=True,
                     help='use nesterov momentum')
 parser.add_argument('--resume', default='', type=str,
                     help='path to latest checkpoint (default: none)')
@@ -60,8 +60,10 @@ parser.add_argument('--lambda-u', default=1, type=float,
                     help='unlabeled loss weight')
 parser.add_argument('--mu', default=7, type=float,
                     help='coefficient of unlabeled batch size')
-parser.add_argument('--use-ema', action='store_true',
+parser.add_argument('--use-ema', action='store_true', default=True,
                     help='use EMA model')
+parser.add_argument('--no-tqdm', action='store_true',
+                    help="don't use tqdm")
 parser.add_argument('--ema-decay', default=0.999, type=float,
                     help='EMA decay rate')
 parser.add_argument("--local_rank", type=int, default=-1,
@@ -109,9 +111,9 @@ def get_cosine_schedule_with_warmup(optimizer,
     def _lr_lambda(current_step):
         if current_step < num_warmup_steps:
             return float(current_step) / float(max(1, num_warmup_steps))
-        progress = float(current_step - num_warmup_steps) / \
+        no_tqdm = float(current_step - num_warmup_steps) / \
             float(max(1, num_training_steps - num_warmup_steps))
-        return max(0., math.cos(math.pi * num_cycles * progress))
+        return max(0., math.cos(math.pi * num_cycles * no_tqdm))
 
     return LambdaLR(optimizer, _lr_lambda, last_epoch)
 
@@ -206,10 +208,19 @@ def main():
     step = 0
     test_accs = []
     model.zero_grad()
+
+    if args.no_tqdm:
+        print('==> Training...')
+
     for epoch in range(start_epoch, args.epochs):
+
         train_loss, train_loss_x, train_loss_u = train(
             labeled_trainloader, unlabeled_trainloader, model,
             optimizer, ema_optimizer, scheduler, epoch)
+
+        if args.no_tqdm:
+            print('Epoch {}. train_loss: {:.4f}. train_loss_x: {:.4f}. train_loss_u: {:.4f}.'
+                  .format(epoch+1, train_loss, train_loss_x, train_loss_u))
 
         if args.use_ema:
             test_model = ema_model
@@ -241,6 +252,7 @@ def main():
         test_accs.append(test_acc)
         print(f'Best top-1 acc: {best_acc}')
         print('Median top-1 acc: {:.2f}\n'.format(np.median(test_accs[-20:])))
+
     logger.close()
     writer.close()
 
@@ -258,8 +270,10 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
     unlabeled_train_iter = iter(unlabeled_trainloader)
     model.train()
 
-    p_bar = tqdm(range(args.iteration),
-                 disable=args.local_rank not in [-1, 0])
+    p_bar = range(args.iteration)
+    if not args.no_tqdm:
+        p_bar = tqdm(p_bar,
+                     disable=args.local_rank not in [-1, 0])
 
     for batch_idx in p_bar:
         try:
@@ -310,19 +324,21 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
         batch_time.update(time.time() - end)
         end = time.time()
 
-        p_bar.set_description('Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.6f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. '.format(
-            epoch=epoch + 1,
-            epochs=args.epochs,
-            batch=batch_idx + 1,
-            iter=args.iteration,
-            lr=scheduler.get_last_lr()[0],
-            data=data_time.avg,
-            bt=batch_time.avg,
-            loss=losses.avg,
-            loss_x=losses_x.avg,
-            loss_u=losses_u.avg
-        ))
-    p_bar.close()
+        if not args.no_tqdm:
+            p_bar.set_description('Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.6f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. '.format(
+                epoch=epoch + 1,
+                epochs=args.epochs,
+                batch=batch_idx + 1,
+                iter=args.iteration,
+                lr=scheduler.get_last_lr()[0],
+                data=data_time.avg,
+                bt=batch_time.avg,
+                loss=losses.avg,
+                loss_x=losses_x.avg,
+                loss_u=losses_u.avg
+            ))
+    if not args.no_tqdm:
+        p_bar.close()
     return losses.avg, losses_x.avg, losses_u.avg
 
 
@@ -334,8 +350,11 @@ def test(test_loader, model, epoch):
     top5 = AverageMeter()
     end = time.time()
 
-    p_bar = tqdm(test_loader,
-                 disable=args.local_rank not in [-1, 0])
+    p_bar = test_loader
+    if not args.no_tqdm:
+        p_bar = tqdm(test_loader,
+                     disable=args.local_rank not in [-1, 0])
+
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(p_bar):
             data_time.update(time.time() - end)
@@ -353,17 +372,18 @@ def test(test_loader, model, epoch):
 
             batch_time.update(time.time() - end)
             end = time.time()
-
-            p_bar.set_description('Test Iter: {batch:4}/{iter:4}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. top1: {top1:.2f}. top5: {top5:.2f}. '.format(
-                batch=batch_idx + 1,
-                iter=len(test_loader),
-                data=data_time.avg,
-                bt=batch_time.avg,
-                loss=losses.avg,
-                top1=top1.avg,
-                top5=top5.avg,
-            ))
-        p_bar.close()
+            if args.no_tqdm:
+                p_bar.set_description('Test Iter: {batch:4}/{iter:4}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. top1: {top1:.2f}. top5: {top5:.2f}. '.format(
+                    batch=batch_idx + 1,
+                    iter=len(test_loader),
+                    data=data_time.avg,
+                    bt=batch_time.avg,
+                    loss=losses.avg,
+                    top1=top1.avg,
+                    top5=top5.avg,
+                ))
+        if not args.no_tqdm:
+            p_bar.close()
     print("top-1 acc: {:.2f}".format(top1.avg))
     print("top-5 acc: {:.2f}".format(top5.avg))
     return (losses.avg, top1.avg)

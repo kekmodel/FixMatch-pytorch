@@ -4,7 +4,7 @@ from __future__ import absolute_import
 import matplotlib.pyplot as plt
 import numpy as np
 
-__all__ = ['Logger', 'LoggerMonitor', 'savefig', 'sftp_upload']
+__all__ = ['Logger', 'LoggerMonitor', 'savefig']
 
 
 def savefig(fname, dpi=None):
