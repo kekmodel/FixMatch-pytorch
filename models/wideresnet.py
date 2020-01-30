@@ -100,9 +100,8 @@ class WideResNet(nn.Module):
         return self.fc(out)
 
 
-def build_wideresnet(depth, widen_factor, dropout, num_classes, verbose):
-    if verbose:
-        print(f"| WideResNet {depth}x{widen_factor}")
+def build_wideresnet(depth, widen_factor, dropout, num_classes):
+    print(f"| WideResNet {depth}x{widen_factor}")
     return WideResNet(depth=depth,
                       widen_factor=widen_factor,
                       drop_rate=dropout,

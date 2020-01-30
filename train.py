@@ -4,6 +4,8 @@ import os
 import random
 import shutil
 import time
+from copy import deepcopy
+from collections import OrderedDict
 
 import numpy as np
 import torch
@@ -62,7 +64,7 @@ parser.add_argument('--mu', default=7, type=float,
                     help='coefficient of unlabeled batch size')
 parser.add_argument('--use-ema', action='store_true', default=True,
                     help='use EMA model')
-parser.add_argument('--no-prgress', action='store_true',
+parser.add_argument('--no-progress', action='store_true',
                     help="don't use prgress bar")
 parser.add_argument('--ema-decay', default=0.999, type=float,
                     help='EMA decay rate')
@@ -103,6 +105,24 @@ if args.seed != -1:
 best_acc = 0
 
 
+def create_model(arch):
+    if arch == 'wideresnet':
+        import models.wideresnet as models
+        model = models.build_wideresnet(depth=depth,
+                                        widen_factor=widen_factor,
+                                        dropout=0,
+                                        num_classes=num_classes).to(device)
+    elif arch == 'resnext':
+        import models.resnext as models
+        model = models.build_resnext(cardinality=cardinality,
+                                     depth=depth,
+                                     width=width,
+                                     num_classes=num_classes).to(device)
+    print('Total params: {:.2f}M'.format(
+        sum(p.numel() for p in model.parameters())/1e6))
+    return model
+
+
 def get_cosine_schedule_with_warmup(optimizer,
                                     num_warmup_steps,
                                     num_training_steps,
@@ -139,43 +159,25 @@ def main():
         test_set, batch_size=args.batch_size, shuffle=False,
         num_workers=args.num_workers, pin_memory=False)
 
-    def create_model(ema=False, verbose=True):
-        if args.arch == 'wideresnet':
-            import models.wideresnet as models
-            model = models.build_wideresnet(depth=depth,
-                                            widen_factor=widen_factor,
-                                            dropout=0,
-                                            num_classes=num_classes,
-                                            verbose=verbose).to(device)
-        elif args.arch == 'resnext':
-            import models.resnext as models
-            model = models.build_resnext(cardinality=cardinality,
-                                         depth=depth,
-                                         width=width,
-                                         num_classes=num_classes,
-                                         verbose=verbose).to(device)
-        if ema:
-            for param in model.parameters():
-                param.detach_()
+    model = create_model(args.arch)
 
-        return model
+    no_decay = ["bias", "bn"]
+    grouped_parameters = [
+        {
+            "params": [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
+            "weight_decay": args.wdecay * 2,  # L2 regulization
+        },
+        {"params": [p for n, p in model.named_parameters() if any(
+            nd in n for nd in no_decay)], "weight_decay": 0.0},
+    ]
 
-    model = create_model()
-    print('Total params: {:.2f}M'.format(
-        sum(p.numel() for p in model.parameters())/1e6))
-
-    ema_optimizer = None
-    if args.use_ema:
-        ema_model = create_model(ema=True, verbose=False)
-        ema_optimizer = OptimizerEMA(model, ema_model,
-                                     alpha=args.ema_decay,
-                                     weight_decay=args.wdecay)
-        # because weight decay in ema_optimizer
-        args.wdecay = 0
-
-    optimizer = optim.SGD(model.parameters(), lr=args.lr,
+    optimizer = optim.SGD(grouped_parameters, lr=args.lr,
                           momentum=0.9, weight_decay=args.wdecay,
                           nesterov=args.nesterov)
+
+    ema_model = None
+    if args.use_ema:
+        ema_model = ModelEMA(model, args.ema_decay, device)
 
     if args.iteration == -1:
         args.iteration = int(65536//args.batch_size)
@@ -195,7 +197,7 @@ def main():
         best_acc = checkpoint['best_acc']
         start_epoch = checkpoint['epoch']
         model.load_state_dict(checkpoint['state_dict'])
-        ema_model.load_state_dict(checkpoint['ema_state_dict'])
+        ema_model.ema.load_state_dict(checkpoint['ema_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         logger = Logger(os.path.join(args.out, 'log.txt'),
                         title=args.dataset, resume=True)
@@ -216,14 +218,14 @@ def main():
 
         train_loss, train_loss_x, train_loss_u = train(
             labeled_trainloader, unlabeled_trainloader, model,
-            optimizer, ema_optimizer, scheduler, epoch)
+            optimizer, ema_model, scheduler, epoch)
 
         if args.no_progress:
             print('Epoch {}. train_loss: {:.4f}. train_loss_x: {:.4f}. train_loss_u: {:.4f}.'
                   .format(epoch+1, train_loss, train_loss_x, train_loss_u))
 
         if args.use_ema:
-            test_model = ema_model
+            test_model = ema_model.ema
         else:
             test_model = model
 
@@ -244,7 +246,7 @@ def main():
         save_checkpoint({
             'epoch': epoch + 1,
             'state_dict': model.state_dict(),
-            'ema_state_dict': ema_model.state_dict() if args.use_ema else None,
+            'ema_state_dict': ema_model.ema.state_dict() if args.use_ema else None,
             'acc': test_acc,
             'best_acc': best_acc,
             'optimizer': optimizer.state_dict(),
@@ -258,7 +260,7 @@ def main():
 
 
 def train(labeled_trainloader, unlabeled_trainloader, model,
-          optimizer, ema_optimizer, scheduler, epoch):
+          optimizer, ema_model, scheduler, epoch):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -315,8 +317,8 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
         loss.backward()
         optimizer.step()
 
-        if ema_optimizer is not None:
-            ema_optimizer.step()
+        if ema_model is not None:
+            ema_model.update(model)
 
         scheduler.step()
         model.zero_grad()
@@ -397,27 +399,44 @@ def save_checkpoint(state, is_best, checkpoint=args.out, filename='checkpoint.pt
             checkpoint, 'model_best.pth.tar'))
 
 
-class OptimizerEMA(object):
-    def __init__(self, model, ema_model, alpha, weight_decay):
-        self.model = model
-        self.ema_model = ema_model
-        self.alpha = alpha
-        self.params = list(model.state_dict().values())
-        self.ema_params = list(ema_model.state_dict().values())
-        self.wd = weight_decay * args.lr
+class ModelEMA(object):
+    def __init__(self, model, decay, device='', resume=''):
+        self.ema = deepcopy(model)
+        self.ema.eval()
+        self.decay = decay
+        self.device = device
+        if device:
+            self.ema.to(device=device)
+        self.ema_has_module = hasattr(self.ema, 'module')
+        if resume:
+            self._load_checkpoint(resume)
+        for p in self.ema.parameters():
+            p.requires_grad_(False)
 
-        for param, ema_param in zip(self.params, self.ema_params):
-            param.data.copy_(ema_param.data)
+    def _load_checkpoint(self, checkpoint_path):
+        checkpoint = torch.load(checkpoint_path)
+        assert isinstance(checkpoint, dict)
+        if 'ema_state_dict' in checkpoint:
+            new_state_dict = OrderedDict()
+            for k, v in checkpoint['ema_state_dict'].items():
+                if self.ema_has_module:
+                    name = 'module.' + k if not k.startswith('module') else k
+                else:
+                    name = k
+                new_state_dict[name] = v
+            self.ema.load_state_dict(new_state_dict)
 
-    def step(self):
-        one_minus_alpha = 1.0 - self.alpha
-        for param, ema_param in zip(self.params, self.ema_params):
-            if ema_param.dtype == torch.long:
-                continue
-            ema_param.mul_(self.alpha)
-            ema_param.add_(param * one_minus_alpha)
-            # weight decay
-            param.mul_(1 - self.wd)
+    def update(self, model):
+        needs_module = hasattr(model, 'module') and not self.ema_has_module
+        with torch.no_grad():
+            msd = model.state_dict()
+            for k, ema_v in self.ema.state_dict().items():
+                if needs_module:
+                    k = 'module.' + k
+                model_v = msd[k].detach()
+                if self.device:
+                    model_v = model_v.to(device=self.device)
+                ema_v.copy_(ema_v * self.decay + (1. - self.decay) * model_v)
 
 
 if __name__ == '__main__':
