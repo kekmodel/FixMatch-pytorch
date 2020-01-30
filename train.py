@@ -62,8 +62,8 @@ parser.add_argument('--mu', default=7, type=float,
                     help='coefficient of unlabeled batch size')
 parser.add_argument('--use-ema', action='store_true', default=True,
                     help='use EMA model')
-parser.add_argument('--no-tqdm', action='store_true',
-                    help="don't use tqdm")
+parser.add_argument('--no-prgress', action='store_true',
+                    help="don't use prgress bar")
 parser.add_argument('--ema-decay', default=0.999, type=float,
                     help='EMA decay rate')
 parser.add_argument("--local_rank", type=int, default=-1,
@@ -111,9 +111,9 @@ def get_cosine_schedule_with_warmup(optimizer,
     def _lr_lambda(current_step):
         if current_step < num_warmup_steps:
             return float(current_step) / float(max(1, num_warmup_steps))
-        no_tqdm = float(current_step - num_warmup_steps) / \
+        no_progress = float(current_step - num_warmup_steps) / \
             float(max(1, num_training_steps - num_warmup_steps))
-        return max(0., math.cos(math.pi * num_cycles * no_tqdm))
+        return max(0., math.cos(math.pi * num_cycles * no_progress))
 
     return LambdaLR(optimizer, _lr_lambda, last_epoch)
 
@@ -209,7 +209,7 @@ def main():
     test_accs = []
     model.zero_grad()
 
-    if args.no_tqdm:
+    if args.no_progress:
         print('==> Training...')
 
     for epoch in range(start_epoch, args.epochs):
@@ -218,7 +218,7 @@ def main():
             labeled_trainloader, unlabeled_trainloader, model,
             optimizer, ema_optimizer, scheduler, epoch)
 
-        if args.no_tqdm:
+        if args.no_progress:
             print('Epoch {}. train_loss: {:.4f}. train_loss_x: {:.4f}. train_loss_u: {:.4f}.'
                   .format(epoch+1, train_loss, train_loss_x, train_loss_u))
 
@@ -271,7 +271,7 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
     model.train()
 
     p_bar = range(args.iteration)
-    if not args.no_tqdm:
+    if not args.no_progress:
         p_bar = tqdm(p_bar,
                      disable=args.local_rank not in [-1, 0])
 
@@ -324,7 +324,7 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
         batch_time.update(time.time() - end)
         end = time.time()
 
-        if not args.no_tqdm:
+        if not args.no_progress:
             p_bar.set_description('Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.6f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. '.format(
                 epoch=epoch + 1,
                 epochs=args.epochs,
@@ -337,7 +337,7 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
                 loss_x=losses_x.avg,
                 loss_u=losses_u.avg
             ))
-    if not args.no_tqdm:
+    if not args.no_progress:
         p_bar.close()
     return losses.avg, losses_x.avg, losses_u.avg
 
@@ -351,7 +351,7 @@ def test(test_loader, model, epoch):
     end = time.time()
 
     p_bar = test_loader
-    if not args.no_tqdm:
+    if not args.no_progress:
         p_bar = tqdm(test_loader,
                      disable=args.local_rank not in [-1, 0])
 
@@ -372,7 +372,7 @@ def test(test_loader, model, epoch):
 
             batch_time.update(time.time() - end)
             end = time.time()
-            if args.no_tqdm:
+            if args.no_progress:
                 p_bar.set_description('Test Iter: {batch:4}/{iter:4}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. top1: {top1:.2f}. top5: {top5:.2f}. '.format(
                     batch=batch_idx + 1,
                     iter=len(test_loader),
@@ -382,7 +382,7 @@ def test(test_loader, model, epoch):
                     top1=top1.avg,
                     top5=top5.avg,
                 ))
-        if not args.no_tqdm:
+        if not args.no_progress:
             p_bar.close()
     print("top-1 acc: {:.2f}".format(top1.avg))
     print("top-5 acc: {:.2f}".format(top5.avg))
