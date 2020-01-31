@@ -316,11 +316,9 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
 
         loss.backward()
         optimizer.step()
-
+        scheduler.step()
         if ema_model is not None:
             ema_model.update(model)
-
-        scheduler.step()
         model.zero_grad()
 
         batch_time.update(time.time() - end)

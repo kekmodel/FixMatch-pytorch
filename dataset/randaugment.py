@@ -34,8 +34,7 @@ def Contrast(img, v):
 
 
 def Cutout(img, v):
-    v *= 0.5
-    assert 0.0 <= v <= 0.5
+    assert 0 <= v <= 1
     if v == 0:
         return img
     v = 1 + int(v * min(img.size) * 0.499)
@@ -159,5 +158,5 @@ class RandAugCutout(object):
         for op in ops:
             val = np.random.uniform(0, self.m) * 0.1
             img = op(img, val)
-        img = CutoutAbs(img, int(32 * 0.5))
+        img = Cutout(img, 1.0)
         return img
