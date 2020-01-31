@@ -97,8 +97,8 @@ elif args.dataset == 'cifar100':
 
 if args.seed != -1:
     random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
+    np.random.seed(12+args.seed)
+    torch.manual_seed(24+args.seed)
 
 best_acc = 0
 
