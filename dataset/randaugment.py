@@ -152,12 +152,12 @@ class RandAugCutout(object):
         self.n = n
         self.m = m
         self.augment_list = augment_list()
-        assert m <= 10
+        assert 0 <= m <= 10
 
     def __call__(self, img):
         ops = random.choices(self.augment_list, k=self.n)
         for op in ops:
-            val = np.random.randint(0, self.m) * 0.1
+            val = np.random.uniform(0, self.m) * 0.1
             if random.random() < 0.5:
                 img = op(img, val)
         img = CutoutAbs(img, 16)
