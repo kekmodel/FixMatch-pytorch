@@ -216,7 +216,7 @@ def main():
 
     for epoch in range(start_epoch, args.epochs):
 
-        train_loss, train_loss_x, train_loss_u = train(
+        train_loss, train_loss_x, train_loss_u, mask_prob = train(
             labeled_trainloader, unlabeled_trainloader, model,
             optimizer, ema_model, scheduler, epoch)
 
@@ -235,7 +235,8 @@ def main():
         writer.add_scalar('losses/1.train_loss', train_loss, step)
         writer.add_scalar('losses/2.train_loss_x', train_loss_x, step)
         writer.add_scalar('losses/3.train_loss_u', train_loss_u, step)
-        writer.add_scalar('losses/4.test_loss', test_loss, step)
+        writer.add_scalar('losses/4.mask', mask_prob, step)
+        writer.add_scalar('losses/5.test_loss', test_loss, step)
         writer.add_scalar('accuracy/test_acc', test_acc, step)
 
         logger.append([train_loss, train_loss_x, train_loss_u,
@@ -323,9 +324,9 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
 
         batch_time.update(time.time() - end)
         end = time.time()
-
+        mask_prob = mask.mean().item()
         if not args.no_progress:
-            p_bar.set_description('Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.6f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. '.format(
+            p_bar.set_description('Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.6f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. Mask: {mask:.4f}. '.format(
                 epoch=epoch + 1,
                 epochs=args.epochs,
                 batch=batch_idx + 1,
@@ -335,11 +336,12 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
                 bt=batch_time.avg,
                 loss=losses.avg,
                 loss_x=losses_x.avg,
-                loss_u=losses_u.avg
+                loss_u=losses_u.avg,
+                mask=mask_prob,
             ))
     if not args.no_progress:
         p_bar.close()
-    return losses.avg, losses_x.avg, losses_u.avg
+    return losses.avg, losses_x.avg, losses_u.avg, mask_prob
 
 
 def test(test_loader, model, epoch):
