@@ -374,7 +374,7 @@ def test(test_loader, model, epoch):
 
             batch_time.update(time.time() - end)
             end = time.time()
-            if args.no_progress:
+            if not args.no_progress:
                 p_bar.set_description('Test Iter: {batch:4}/{iter:4}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. top1: {top1:.2f}. top5: {top5:.2f}. '.format(
                     batch=batch_idx + 1,
                     iter=len(test_loader),
