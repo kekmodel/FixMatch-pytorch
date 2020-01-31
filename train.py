@@ -56,7 +56,7 @@ parser.add_argument('--iteration', type=int, default=-1,
                     '(-1: automatic calculation to learn 65536 examples.)')
 parser.add_argument('--out', default='result',
                     help='Directory to output the result')
-parser.add_argument('--threshold', default=0.7, type=float,
+parser.add_argument('--threshold', default=0.95, type=float,
                     help='pseudo label threshold')
 parser.add_argument('--lambda-u', default=1, type=float,
                     help='unlabeled loss weight')
@@ -303,7 +303,7 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
 
         pseudo_label = torch.softmax(logits_u_w, dim=-1).detach()
         max_probs, targets_u = torch.max(pseudo_label, dim=-1)
-        mask = max_probs.gt(args.threshold).float()
+        mask = max_probs.ge(args.threshold).float()
 
         Lu = (F.cross_entropy(logits_u_s, targets_u,
                               reduction='none') * mask).mean()
