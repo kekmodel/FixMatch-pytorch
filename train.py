@@ -294,7 +294,7 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
         batch_size = inputs_x.shape[0]
         inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s)).to(device)
         logits = model(inputs)
-        logits_x = logits[:batch_size:]
+        logits_x = logits[:batch_size]
         logits_u_w, logits_u_s = logits[batch_size:].chunk(2)
         targets_x = targets_x.to(device, non_blocking=True)
         del logits
@@ -384,8 +384,7 @@ def test(test_loader, model, epoch):
                 ))
         if not args.no_progress:
             p_bar.close()
-    print("top-1 acc: {:.2f}".format(top1.avg))
-    print("top-5 acc: {:.2f}".format(top5.avg))
+    print("top-1 acc: {:.2f}. top-5 acc: {:.2f}.".format(top1.avg, top5.avg))
     return (losses.avg, top1.avg)
 
 
