@@ -58,8 +58,6 @@ parser.add_argument('--out', default='result',
                     help='Directory to output the result')
 parser.add_argument('--threshold', default=0.95, type=float,
                     help='pseudo label threshold')
-parser.add_argument('--lambda-u', default=1, type=float,
-                    help='unlabeled loss weight')
 parser.add_argument('--mu', default=7, type=float,
                     help='coefficient of unlabeled batch size')
 parser.add_argument('--use-ema', action='store_true', default=True,
@@ -167,9 +165,10 @@ def main():
             "params": [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
             "weight_decay": args.wdecay * 2,  # L2 regulization
         },
-        {"params": [p for n, p in model.named_parameters() if any(
-            nd in n for nd in no_decay)], "weight_decay": 0.0},
-    ]
+        {
+            "params": [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)],
+            "weight_decay": 0.0
+        }]
 
     optimizer = optim.SGD(grouped_parameters, lr=args.lr,
                           momentum=0.9,
@@ -232,12 +231,12 @@ def main():
         test_loss, test_acc = test(test_loader, test_model, epoch)
 
         step = args.iteration * epoch
-        writer.add_scalar('losses/1.train_loss', train_loss, step)
-        writer.add_scalar('losses/2.train_loss_x', train_loss_x, step)
-        writer.add_scalar('losses/3.train_loss_u', train_loss_u, step)
-        writer.add_scalar('losses/4.mask', mask_prob, step)
-        writer.add_scalar('losses/5.test_loss', test_loss, step)
-        writer.add_scalar('accuracy/test_acc', test_acc, step)
+        writer.add_scalar('train/1.train_loss', train_loss, step)
+        writer.add_scalar('train/2.train_loss_x', train_loss_x, step)
+        writer.add_scalar('train/3.train_loss_u', train_loss_u, step)
+        writer.add_scalar('train/4.mask', mask_prob, step)
+        writer.add_scalar('test/1.test_acc', test_acc, step)
+        writer.add_scalar('test/2.test_loss', test_loss, step)
 
         logger.append([train_loss, train_loss_x, train_loss_u,
                        test_loss, test_acc])
@@ -253,7 +252,7 @@ def main():
             'optimizer': optimizer.state_dict(),
         }, is_best)
         test_accs.append(test_acc)
-        print(f'Best top-1 acc: {best_acc}')
+        print('Best top-1 acc: {:.2f}'.format(best_acc))
         print('Median top-1 acc: {:.2f}\n'.format(np.median(test_accs[-20:])))
 
     logger.close()
@@ -308,8 +307,7 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
 
         Lu = (F.cross_entropy(logits_u_s, targets_u,
                               reduction='none') * mask).mean()
-
-        loss = Lx + args.lambda_u * Lu
+        loss = Lx + Lu
 
         losses.update(loss.item(), batch_size * (1+args.mu*2))
         losses_x.update(Lx.item(), batch_size * (1+args.mu*2))
@@ -386,7 +384,7 @@ def test(test_loader, model, epoch):
                 ))
         if not args.no_progress:
             p_bar.close()
-    print("top-1 acc: {:.2f}. top-5 acc: {:.2f}.".format(top1.avg, top5.avg))
+    print("top-1 acc: {:.2f}\ntop-5 acc: {:.2f}".format(top1.avg, top5.avg))
     return (losses.avg, top1.avg)
 
 

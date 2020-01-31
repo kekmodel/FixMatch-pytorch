@@ -156,7 +156,8 @@ class RandAugCutout(object):
     def __call__(self, img):
         ops = random.choices(self.augment_list, k=self.n)
         for op in ops:
-            val = np.random.uniform(0, self.m) * 0.1
-            img = op(img, val)
+            val = np.random.uniform(0, self.m * 0.1)
+            if random.random() > 0.5:
+                img = op(img, val)
         img = Cutout(img, 1.0)
         return img

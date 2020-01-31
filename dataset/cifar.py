@@ -54,11 +54,11 @@ def get_cifar100(root, num_labeled, num_classes):
                               padding=int(32*0.125),
                               padding_mode='reflect'),
         transforms.ToTensor(),
-        transforms.Normalize(mean=cifar10_mean, std=cifar10_std)
+        transforms.Normalize(mean=cifar100_mean, std=cifar100_std)
     ])
     transform_val = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean=cifar10_mean, std=cifar10_std)
+        transforms.Normalize(mean=cifar100_mean, std=cifar100_std)
     ])
     base_dataset = datasets.CIFAR100(
         root, train=True, download=True)
@@ -72,7 +72,7 @@ def get_cifar100(root, num_labeled, num_classes):
 
     train_unlabeled_dataset = CIFAR100SSL(
         root, train_unlabeled_idxs, train=True,
-        transform=TransformFix(mean=cifar10_mean, std=cifar10_std))
+        transform=TransformFix(mean=cifar100_mean, std=cifar100_std))
 
     test_dataset = datasets.CIFAR100(
         root, train=False, transform=transform_val, download=False)
