@@ -172,7 +172,7 @@ def main():
     ]
 
     optimizer = optim.SGD(grouped_parameters, lr=args.lr,
-                          momentum=0.9, weight_decay=args.wdecay,
+                          momentum=0.9,
                           nesterov=args.nesterov)
 
     ema_model = None
@@ -362,8 +362,8 @@ def test(test_loader, model, epoch):
             data_time.update(time.time() - end)
             model.eval()
 
-            inputs, targets = inputs.to(
-                device), targets.to(device, non_blocking=True)
+            inputs = inputs.to(device)
+            targets = targets.to(device, non_blocking=True)
             outputs = model(inputs)
             loss = F.cross_entropy(outputs, targets)
 
