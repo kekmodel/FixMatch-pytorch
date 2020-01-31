@@ -43,12 +43,12 @@ def Cutout(img, v):
 
 def CutoutAbs(img, v):
     w, h = img.size
-    x = np.random.uniform(0, w)
-    y = np.random.uniform(0, h)
-    x0 = max(0, x - v // 2)
-    y0 = max(0, y - v // 2)
-    x1 = min(w, x + v // 2)
-    y1 = min(h, y + v // 2)
+    x0 = np.random.uniform(0, w)
+    y0 = np.random.uniform(0, h)
+    x0 = int(max(0, x0 - v / 2.))
+    y0 = int(max(0, y0 - v / 2.))
+    x1 = min(w, x0 + v)
+    y1 = min(h, y0 + v)
     xy = (x0, y0, x1, y1)
     # gray
     color = (127, 127, 127)
@@ -160,5 +160,5 @@ class RandAugCutout(object):
             val = np.random.randint(0, self.m) * 0.1
             if random.random() < 0.5:
                 img = op(img, val)
-        img = Cutout(img, 1.0)
+        img = CutoutAbs(img, 16)
         return img
