@@ -18,6 +18,11 @@ from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+try:
+    from apex import amp
+except ImportError:
+    raise ImportError(
+        "Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
 
 from dataset import cifar
 from utils import AverageMeter, accuracy
@@ -123,18 +128,20 @@ def main():
     def create_model(args):
         if args.arch == 'wideresnet':
             import models.wideresnet as models
-            model = models.build_wideresnet(depth=args.depth,
-                                            widen_factor=args.width,
-                                            dropout=0,
-                                            num_classes=args.num_classes)
+            model, name = models.build_wideresnet(depth=args.depth,
+                                                  widen_factor=args.width,
+                                                  dropout=0,
+                                                  num_classes=args.num_classes)
         elif args.arch == 'resnext':
             import models.resnext as models
-            model = models.build_resnext(cardinality=args.cardinality,
-                                         depth=args.depth,
-                                         width=args.width,
-                                         num_classes=args.num_classes)
-        logger.info('  Total params: {:.2f}M'.format(
-            sum(p.numel() for p in model.parameters())/1e6))
+            model, name = models.build_resnext(cardinality=args.cardinality,
+                                               depth=args.depth,
+                                               width=args.width,
+                                               num_classes=args.num_classes)
+        if args.local_rank in [-1, 0]:
+            print(name)
+            print('Total params: {:.2f}M'.format(
+                sum(p.numel() for p in model.parameters())/1e6))
 
         return model
 
@@ -265,11 +272,6 @@ def main():
         torch.distributed.barrier()
 
     if args.amp:
-        try:
-            from apex import amp
-        except ImportError:
-            raise ImportError(
-                "Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
         model, optimizer = amp.initialize(
             model, optimizer, opt_level=args.opt_level)
 

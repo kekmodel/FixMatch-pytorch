@@ -145,6 +145,7 @@ class CifarResNeXt(nn.Module):
 
 
 def build_resnext(cardinality, depth, width, num_classes):
-    print(f"| ResNeXt {depth+1}x{width}")
-    return CifarResNeXt(cardinality=cardinality, depth=depth, base_width=width,
-                        num_classes=num_classes)
+    return CifarResNeXt(cardinality=cardinality,
+                        depth=depth,
+                        base_width=width,
+                        num_classes=num_classes), f"| ResNeXt {depth+1}x{width}"
