@@ -110,7 +110,7 @@ def ShearY(img, v):
 def Solarize(img, v):
     v = _int_parameter(v, 256)
     assert 0 <= v <= 256
-    return PIL.ImageOps.solarize(img, v)
+    return PIL.ImageOps.solarize(img, 256 - v)
 
 
 def SolarizeAdd(img, v, threshold=128):
