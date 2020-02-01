@@ -47,26 +47,6 @@ def set_seed(args):
         torch.cuda.manual_seed_all(args.seed)
 
 
-def create_model(args):
-    if args.arch == 'wideresnet':
-        import models.wideresnet as models
-        model = models.build_wideresnet(depth=args.depth,
-                                        widen_factor=args.width,
-                                        dropout=0,
-                                        num_classes=args.num_classes)
-    elif args.arch == 'resnext':
-        import models.resnext as models
-        model = models.build_resnext(cardinality=args.cardinality,
-                                     depth=args.depth,
-                                     width=args.width,
-                                     num_classes=args.num_classes)
-    if args.local_rank in [-1, 0]:
-        logger.info('Total params: {:.2f}M'.format(
-            sum(p.numel() for p in model.parameters())/1e6))
-
-    return model
-
-
 def get_cosine_schedule_with_warmup(optimizer,
                                     num_warmup_steps,
                                     num_training_steps,
@@ -140,6 +120,22 @@ def main():
     args = parser.parse_args()
     global best_acc
 
+    def create_model(args):
+        if args.arch == 'wideresnet':
+            import models.wideresnet as models
+            model = models.build_wideresnet(depth=args.depth,
+                                            widen_factor=args.width,
+                                            dropout=0,
+                                            num_classes=args.num_classes)
+        elif args.arch == 'resnext':
+            import models.resnext as models
+            model = models.build_resnext(cardinality=args.cardinality,
+                                         depth=args.depth,
+                                         width=args.width,
+                                         num_classes=args.num_classes)
+
+        return model
+
     if args.local_rank == -1:
         device = torch.device("cuda", args.gpu_id)
         args.n_gpu = torch.cuda.device_count()
@@ -203,6 +199,8 @@ def main():
         torch.distributed.barrier()
 
     model.to(args.device)
+    logger.info('  Total params: {:.2f}M'.format(
+        sum(p.numel() for p in model.parameters())/1e6))
 
     sampler = RandomSampler if args.local_rank == -1 else DistributedSampler
     labeled_trainloader = DataLoader(labeled_dataset,
