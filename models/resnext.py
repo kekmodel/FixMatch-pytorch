@@ -1,5 +1,9 @@
+import logging
+
 import torch.nn as nn
 import torch.nn.functional as F
+
+logger = logging.getLogger(__name__)
 
 
 class ResNeXtBottleneck(nn.Module):
@@ -145,7 +149,8 @@ class CifarResNeXt(nn.Module):
 
 
 def build_resnext(cardinality, depth, width, num_classes):
+    logger.info(f"| ResNeXt {depth+1}x{width}")
     return CifarResNeXt(cardinality=cardinality,
                         depth=depth,
                         base_width=width,
-                        num_classes=num_classes), f"| ResNeXt {depth+1}x{width}"
+                        num_classes=num_classes)

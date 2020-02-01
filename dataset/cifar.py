@@ -1,9 +1,13 @@
+import logging
+
 import numpy as np
 from PIL import Image
 from torchvision import datasets
 from torchvision import transforms
 
 from . import randaugment
+
+logger = logging.getLogger(__name__)
 
 cifar10_mean = (0.4914, 0.4822, 0.4465)
 cifar10_std = (0.2471, 0.2435, 0.2616)
@@ -41,8 +45,8 @@ def get_cifar10(root, num_labeled, num_classes):
     test_dataset = datasets.CIFAR10(
         root, train=False, transform=transform_val, download=False)
 
-    print(f"#Labeled: {len(train_labeled_idxs)}"
-          f" #Unlabeled: {len(train_unlabeled_idxs)}")
+    logger.info(f"#Labeled: {len(train_labeled_idxs)}"
+                f" #Unlabeled: {len(train_unlabeled_idxs)}")
 
     return train_labeled_dataset, train_unlabeled_dataset, test_dataset
 
@@ -76,8 +80,9 @@ def get_cifar100(root, num_labeled, num_classes):
 
     test_dataset = datasets.CIFAR100(
         root, train=False, transform=transform_val, download=False)
-    print(f"#Labeled: {len(train_labeled_idxs)}"
-          f" #Unlabeled: {len(train_unlabeled_idxs)}")
+
+    logger.info(f"#Labeled: {len(train_labeled_idxs)}"
+                f" #Unlabeled: {len(train_unlabeled_idxs)}")
 
     return train_labeled_dataset, train_unlabeled_dataset, test_dataset
 

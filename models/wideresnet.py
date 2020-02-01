@@ -1,6 +1,10 @@
+import logging
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+logger = logging.getLogger(__name__)
 
 
 class BasicBlock(nn.Module):
@@ -101,7 +105,7 @@ class WideResNet(nn.Module):
 
 
 def build_wideresnet(depth, widen_factor, dropout, num_classes):
-    print(f"| WideResNet {depth}x{widen_factor}")
+    logger.info(f"| WideResNet {depth}x{widen_factor}")
     return WideResNet(depth=depth,
                       widen_factor=widen_factor,
                       drop_rate=dropout,

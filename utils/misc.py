@@ -1,8 +1,11 @@
 '''Some helper functions for PyTorch, including:
     - get_mean_and_std: calculate the mean and std value of dataset.
 '''
+import logging
 
 import torch
+
+logger = logging.getLogger(__name__)
 
 __all__ = ['get_mean_and_std', 'AverageMeter']
 
