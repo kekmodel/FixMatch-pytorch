@@ -18,7 +18,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 import dataset.cifar as dataset
-from utils import Logger, AverageMeter, accuracy, mkdir
+from utils import Logger, AverageMeter, accuracy
 
 parser = argparse.ArgumentParser(description='PyTorch FixMatch Training')
 parser.add_argument('--gpu-id', default='0', type=int,
@@ -140,7 +140,7 @@ def main():
     global best_acc
 
     if not os.path.isdir(args.out):
-        mkdir(args.out)
+        os.makedirs(args.out, exist_ok=True)
 
     train_labeled_set, train_unlabeled_set, test_set = get_dataset(
         './data', args.num_labeled, num_classes=num_classes)
