@@ -128,20 +128,19 @@ def main():
     def create_model(args):
         if args.arch == 'wideresnet':
             import models.wideresnet as models
-            model, name = models.build_wideresnet(depth=args.depth,
-                                                  widen_factor=args.width,
-                                                  dropout=0,
-                                                  num_classes=args.num_classes)
+            model = models.build_wideresnet(depth=args.depth,
+                                            widen_factor=args.width,
+                                            dropout=0,
+                                            num_classes=args.num_classes)
         elif args.arch == 'resnext':
             import models.resnext as models
-            model, name = models.build_resnext(cardinality=args.cardinality,
-                                               depth=args.depth,
-                                               width=args.width,
-                                               num_classes=args.num_classes)
-        if args.local_rank in [-1, 0]:
-            print(name)
-            print('Total params: {:.2f}M'.format(
-                sum(p.numel() for p in model.parameters())/1e6))
+            model = models.build_resnext(cardinality=args.cardinality,
+                                         depth=args.depth,
+                                         width=args.width,
+                                         num_classes=args.num_classes)
+
+        logger.info('Total params: {:.2f}M'.format(
+            sum(p.numel() for p in model.parameters())/1e6))
 
         return model
 
