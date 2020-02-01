@@ -206,7 +206,6 @@ def main():
                           'Test Loss', 'Test Acc.'])
 
     writer = SummaryWriter(args.out)
-    step = 0
     test_accs = []
     model.zero_grad()
 

@@ -1,13 +1,10 @@
 '''Some helper functions for PyTorch, including:
     - get_mean_and_std: calculate the mean and std value of dataset.
-    - msr_init: net parameter initialization.
-    - progress_bar: progress bar mimic xlua.progress.
 '''
-import errno
-import os
+
 import torch
 
-__all__ = ['get_mean_and_std', 'mkdir', 'AverageMeter']
+__all__ = ['get_mean_and_std', 'AverageMeter']
 
 
 def get_mean_and_std(dataset):
@@ -25,17 +22,6 @@ def get_mean_and_std(dataset):
     mean.div_(len(dataset))
     std.div_(len(dataset))
     return mean, std
-
-
-def mkdir(path):
-    '''make dir if not exist'''
-    try:
-        os.makedirs(path)
-    except OSError as exc:  # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
 
 
 class AverageMeter(object):
