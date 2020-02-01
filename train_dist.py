@@ -471,8 +471,9 @@ def test(args, test_loader, model, epoch):
                 ))
         if not args.no_progress:
             p_bar.close()
-    logger.info(
-        "top-1 acc: {:.2f}\ntop-5 acc: {:.2f}".format(top1.avg, top5.avg))
+
+    logger.info("top-1 acc: {:.2f}".format(top1.avg))
+    logger.info("top-5 acc: {:.2f}".format(top5.avg))
     return (losses.avg, top1.avg)
 
 
