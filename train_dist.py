@@ -224,7 +224,7 @@ def main():
                              batch_size=args.batch_size)
 
     if args.iteration == -1:
-        args.iteration = int(65536//args.batch_size)
+        args.iteration = int(65536 / (args.batch_size*args.world_size))
     args.total_steps = args.epochs * args.iteration
 
     no_decay = ["bias", "bn"]
