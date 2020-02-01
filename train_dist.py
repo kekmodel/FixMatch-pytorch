@@ -73,7 +73,7 @@ def main():
                         help='dataset name')
     parser.add_argument('--num-labeled', type=int, default=4000,
                         help='Number of labeled data')
-    parser.add_argument('--arch', default='widereset', type=str,
+    parser.add_argument('--arch', default='wideresnet', type=str,
                         choices=['wideresnet', 'resnext'],
                         help='dataset name')
     parser.add_argument('--epochs', default=1024, type=int,
@@ -133,6 +133,8 @@ def main():
                                          depth=args.depth,
                                          width=args.width,
                                          num_classes=args.num_classes)
+        logger.info('  Total params: {:.2f}M'.format(
+            sum(p.numel() for p in model.parameters())/1e6))
 
         return model
 
@@ -193,14 +195,12 @@ def main():
     labeled_dataset, unlabeled_dataset, test_dataset = DATASET_GETTERS[args.dataset](
         './data', args.num_labeled, args.num_classes)
 
+    model = create_model(args)
+
     if args.local_rank == 0:
         torch.distributed.barrier()
 
-    model = create_model(args)
-
     model.to(args.device)
-    logger.info('  Total params: {:.2f}M'.format(
-        sum(p.numel() for p in model.parameters())/1e6))
 
     sampler = RandomSampler if args.local_rank == -1 else DistributedSampler
     labeled_trainloader = DataLoader(labeled_dataset,
