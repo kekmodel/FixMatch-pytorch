@@ -401,8 +401,8 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
         losses_x.update(Lx.item())
         losses_u.update(Lu.item())
 
-        optimizer.step()
         scheduler.step()
+        optimizer.step()
         if ema_model is not None:
             ema_model.update(model)
         model.zero_grad()
