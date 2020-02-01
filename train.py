@@ -18,7 +18,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 import dataset.cifar as dataset
-from utils import Logger, AverageMeter, accuracy, mkdir_p
+from utils import Logger, AverageMeter, accuracy, mkdir
 
 parser = argparse.ArgumentParser(description='PyTorch FixMatch Training')
 parser.add_argument('--gpu-id', default='0', type=int,
@@ -140,7 +140,7 @@ def main():
     global best_acc
 
     if not os.path.isdir(args.out):
-        mkdir_p(args.out)
+        mkdir(args.out)
 
     train_labeled_set, train_unlabeled_set, test_set = get_dataset(
         './data', args.num_labeled, num_classes=num_classes)
@@ -230,13 +230,13 @@ def main():
 
         test_loss, test_acc = test(test_loader, test_model, epoch)
 
-        step = args.iteration * epoch
-        writer.add_scalar('train/1.train_loss', train_loss, step)
-        writer.add_scalar('train/2.train_loss_x', train_loss_x, step)
-        writer.add_scalar('train/3.train_loss_u', train_loss_u, step)
-        writer.add_scalar('train/4.mask', mask_prob, step)
-        writer.add_scalar('test/1.test_acc', test_acc, step)
-        writer.add_scalar('test/2.test_loss', test_loss, step)
+        # step = args.iteration * epoch
+        writer.add_scalar('train/1.train_loss', train_loss, epoch)
+        writer.add_scalar('train/2.train_loss_x', train_loss_x, epoch)
+        writer.add_scalar('train/3.train_loss_u', train_loss_u, epoch)
+        writer.add_scalar('train/4.mask', mask_prob, epoch)
+        writer.add_scalar('test/1.test_acc', test_acc, epoch)
+        writer.add_scalar('test/2.test_loss', test_loss, epoch)
 
         logger.append([train_loss, train_loss_x, train_loss_u,
                        test_loss, test_acc])
@@ -301,7 +301,7 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
 
         Lx = F.cross_entropy(logits_x, targets_x, reduction='mean')
 
-        pseudo_label = torch.softmax(logits_u_w, dim=-1).detach()
+        pseudo_label = torch.softmax(logits_u_w.detach_(), dim=-1)
         max_probs, targets_u = torch.max(pseudo_label, dim=-1)
         mask = max_probs.ge(args.threshold).float()
 
@@ -309,9 +309,9 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
                               reduction='none') * mask).mean()
         loss = Lx + Lu
 
-        losses.update(loss.item(), batch_size * (1+args.mu*2))
-        losses_x.update(Lx.item(), batch_size * (1+args.mu*2))
-        losses_u.update(Lu.item(), batch_size * (1+args.mu*2))
+        losses.update(loss.item())
+        losses_x.update(Lx.item())
+        losses_u.update(Lu.item())
 
         loss.backward()
         optimizer.step()

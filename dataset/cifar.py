@@ -16,7 +16,7 @@ def get_cifar10(root, num_labeled, num_classes):
         transforms.RandomHorizontalFlip(),
         transforms.RandomCrop(size=32,
                               padding=int(32*0.125),
-                              padding_mode='constant'),
+                              padding_mode='reflect'),
         transforms.ToTensor(),
         transforms.Normalize(mean=cifar10_mean, std=cifar10_std)
     ])
@@ -52,7 +52,7 @@ def get_cifar100(root, num_labeled, num_classes):
         transforms.RandomHorizontalFlip(),
         transforms.RandomCrop(size=32,
                               padding=int(32*0.125),
-                              padding_mode='constant'),
+                              padding_mode='reflect'),
         transforms.ToTensor(),
         transforms.Normalize(mean=cifar100_mean, std=cifar100_std)
     ])
@@ -103,7 +103,7 @@ class TransformFix(object):
             transforms.RandomHorizontalFlip(),
             transforms.RandomCrop(size=32,
                                   padding=int(32*0.125),
-                                  padding_mode='constant')
+                                  padding_mode='reflect')
         ])
         self.strong = randaugment.RandAugCutout(n=2, m=10)
         self.normalize = transforms.Compose([

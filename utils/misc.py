@@ -7,7 +7,7 @@ import errno
 import os
 import torch
 
-__all__ = ['get_mean_and_std', 'mkdir_p', 'AverageMeter']
+__all__ = ['get_mean_and_std', 'mkdir', 'AverageMeter']
 
 
 def get_mean_and_std(dataset):
@@ -27,7 +27,7 @@ def get_mean_and_std(dataset):
     return mean, std
 
 
-def mkdir_p(path):
+def mkdir(path):
     '''make dir if not exist'''
     try:
         os.makedirs(path)

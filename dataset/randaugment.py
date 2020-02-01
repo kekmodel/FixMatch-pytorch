@@ -1,5 +1,6 @@
 # code in this file is adpated from
 # https://github.com/ildoonet/pytorch-randaugment/blob/master/RandAugment/augmentations.py
+# https://github.com/google-research/fixmatch/blob/master/third_party/auto_augment/augmentations.py
 # https://github.com/google-research/fixmatch/blob/master/libml/ctaugment.py
 import random
 
@@ -10,34 +11,35 @@ import PIL.ImageEnhance
 import PIL.ImageDraw
 from PIL import Image
 
+PARAMETER_MAX = 10
+
 
 def AutoContrast(img, _):
     return PIL.ImageOps.autocontrast(img)
 
 
 def Brightness(img, v):
-    v = 0.9 * v + 0.05
-    # assert 0.05 <= v <= 0.95
+    v = _float_parameter(v, 0.9) + 0.05
+    assert 0.05 <= v <= 0.95
     return PIL.ImageEnhance.Brightness(img).enhance(v)
 
 
 def Color(img, v):
-    v = 0.9 * v + 0.05
-    # assert 0.05 <= v <= 0.95
+    v = _float_parameter(v, 0.9) + 0.05
+    assert 0.05 <= v <= 0.95
     return PIL.ImageEnhance.Color(img).enhance(v)
 
 
 def Contrast(img, v):
-    v = 0.9 * v + 0.05
-    # assert 0.05 <= v <= 0.95
+    v = _float_parameter(v, 0.9) + 0.05
+    assert 0.05 <= v <= 0.95
     return PIL.ImageEnhance.Contrast(img).enhance(v)
 
 
 def Cutout(img, v):
-    assert 0 <= v <= 1
     if v == 0:
         return img
-    v = 1 + int(v * min(img.size) * 0.499)
+    v = _int_parameter(v, min(img.size) * 0.5)
     return CutoutAbs(img, v)
 
 
@@ -70,44 +72,52 @@ def Invert(img, _):
 
 
 def Posterize(img, v):
-    v = 4 + int(v * 4.999)
-    # assert 4 <= v <= 8
+    v = _int_parameter(v, 4) + 4
+    assert 4 <= v <= 8
     return PIL.ImageOps.posterize(img, v)
 
 
 def Rotate(img, v):
-    v = int(np.round((2. * v - 1.) * 30.))
-    # assert -30 <= v <= 30
+    v = _int_parameter(v, 30)
+    if random.random() < 0.5:
+        v = -v
+    assert -30 <= v <= 30
     return img.rotate(v)
 
 
 def Sharpness(img, v):
-    v = 0.9 * v + 0.05
-    # assert 0.05 <= v <= 0.95
+    v = _float_parameter(v, 0.9) + 0.05
+    assert 0.05 <= v <= 0.95
     return PIL.ImageEnhance.Sharpness(img).enhance(v)
 
 
 def ShearX(img, v):
-    v = (2. * v - 1.) * 0.3
+    v = _float_parameter(v, 0.3)
+    if random.random() < 0.5:
+        v = -v
     assert -0.3 <= v <= 0.3
     return img.transform(img.size, PIL.Image.AFFINE, (1, v, 0, 0, 1, 0))
 
 
 def ShearY(img, v):
-    v = (2. * v - 1.) * 0.3
-    # assert -0.3 <= v <= 0.3
+    v = _float_parameter(v, 0.3)
+    if random.random() < 0.5:
+        v = -v
+    assert -0.3 <= v <= 0.3
     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, v, 1, 0))
 
 
 def Solarize(img, v):
-    v = int(v * 255.999)
-    # assert 0 <= v <= 255
+    v = _int_parameter(v, 256)
+    assert 0 <= v <= 256
     return PIL.ImageOps.solarize(img, v)
 
 
 def SolarizeAdd(img, v, threshold=128):
-    v = int(2. * v - 1.) * 110
-    # assert -110 <= v <= 110
+    v = _int_parameter(v, 110)
+    if random.random() < 0.5:
+        v = -v
+    assert -110 <= v <= 110
     img_np = np.array(img).astype(np.int)
     img_np = img_np + v
     img_np = np.clip(img_np, 0, 255)
@@ -117,15 +127,27 @@ def SolarizeAdd(img, v, threshold=128):
 
 
 def TranslateX(img, v):
-    v = (2. * v - 1.) * 0.3
-    # assert -0.3 <= v <= 0.3
+    v = _float_parameter(v, 0.3)
+    if random.random() < 0.5:
+        v = -v
+    assert -0.3 <= v <= 0.3
     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, v, 0, 1, 0))
 
 
 def TranslateY(img, v):
-    v = (2. * v - 1.) * 0.3
-    # assert -0.3 <= v <= 0.3
+    v = _float_parameter(v, 0.3)
+    if random.random() < 0.5:
+        v = -v
+    assert -0.3 <= v <= 0.3
     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, 0, 1, v))
+
+
+def _float_parameter(v, max_v):
+    return float(v) * max_v / PARAMETER_MAX
+
+
+def _int_parameter(v, max_v):
+    return int(v * max_v / PARAMETER_MAX)
 
 
 def augment_list():
@@ -149,15 +171,16 @@ def augment_list():
 
 class RandAugCutout(object):
     def __init__(self, n, m):
+        assert n >= 1
+        assert 1 <= m <= 10
         self.n = n
         self.m = m
         self.augment_list = augment_list()
-        assert 0 <= m <= 10
 
     def __call__(self, img):
         ops = random.choices(self.augment_list, k=self.n)
         for op in ops:
-            val = np.random.uniform(0, self.m) * 0.1
+            val = np.random.randint(1, self.m)
             if random.random() < 0.5:
                 img = op(img, val)
         img = CutoutAbs(img, 16)
