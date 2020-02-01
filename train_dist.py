@@ -193,10 +193,10 @@ def main():
     labeled_dataset, unlabeled_dataset, test_dataset = DATASET_GETTERS[args.dataset](
         './data', args.num_labeled, args.num_classes)
 
-    model = create_model(args)
-
     if args.local_rank == 0:
         torch.distributed.barrier()
+
+    model = create_model(args)
 
     model.to(args.device)
     logger.info('  Total params: {:.2f}M'.format(
