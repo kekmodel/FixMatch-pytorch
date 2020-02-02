@@ -116,7 +116,7 @@ def main():
     parser.add_argument("--local_rank", type=int, default=-1,
                         help="For distributed training: local_rank")
     parser.add_argument('--no-progress', action='store_true',
-                        help="don't use prgress bar")
+                        help="don't use progress bar")
 
     args = parser.parse_args()
     global best_acc
