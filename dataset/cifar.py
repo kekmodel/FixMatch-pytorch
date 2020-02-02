@@ -105,29 +105,25 @@ def x_u_split(labels, num_labeled, num_classes):
 
 
 def fast_collate(batch):
-    print(type(batch[0][0]))
-    exit()
-    assert isinstance(batch[0], tuple)
     batch_size = len(batch)
-    targets = torch.tensor([b[1] for b in batch], dtype=torch.int64)
-    assert len(targets) == batch_size
-    tensor = torch.zeros(
-        (batch_size, *batch[0][0].shape), dtype=torch.uint8)
-    for i in range(batch_size):
-        tensor[i].copy_(batch[i][0])
-    return tensor, targets
+    if len(batch[0]) == 2:
+        targets = torch.tensor([b[1] for b in batch], dtype=torch.int64)
+        assert len(targets) == batch_size
+        inputs = torch.zeros(
+            (batch_size, *batch[0][0].shape), dtype=torch.uint8)
+        for i in range(batch_size):
+            inputs[i].copy_(batch[i][0])
+        return inputs, targets
 
-
-def fast_collate_u(batch):
-    assert isinstance(batch[0], tuple)
-    batch_size = len(batch)
-    targets = torch.tensor([b[1] for b in batch], dtype=torch.int64)
-    assert len(targets) == batch_size
-    tensor = torch.zeros(
-        (batch_size, *batch[0][0].shape), dtype=torch.uint8)
-    for i in range(batch_size):
-        tensor[i].copy_(batch[i][0])
-    return tensor, targets
+    if len(batch[0]) == 3:  # unlabaeld batch
+        input1 = torch.zeros(
+            (batch_size, *batch[0][0].shape), dtype=torch.uint8)
+        input2 = torch.zeros(
+            (batch_size, *batch[0][1].shape), dtype=torch.uint8)
+        for i in range(batch_size):
+            input1[i].copy_(batch[i][0])
+            input2[i].copy_(batch[i][1])
+        return input1, input2
 
 
 class TransformFix(object):
@@ -313,10 +309,10 @@ class PrefetchedWrapperU(object):
         loader_iter = iter(loader)
 
         try:
-            next_input_w, next_input_s, _ = loader_iter.next()
+            next_input_w, next_input_s = loader_iter.next()
         except:
             loader_iter = iter(loader)
-            next_input_w, next_input_s, _ = loader_iter.next()
+            next_input_w, next_input_s = loader_iter.next()
 
         with torch.cuda.stream(stream):
             next_input_w = next_input_w.to(device, non_blocking=True)
