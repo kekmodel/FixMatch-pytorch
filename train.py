@@ -420,7 +420,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
             p_bar.update()
 
     if not args.no_progress:
-        train_loader.close()
+        p_bar.close()
     return losses.avg, losses_x.avg, losses_u.avg, mask_prob
 
 
