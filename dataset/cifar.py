@@ -176,7 +176,7 @@ class CIFAR100SSL(datasets.CIFAR100):
 
 
 class PrefetchedWrapper(object):
-    def prefetched_loader(loader, mean, std):
+    def prefetched_loader(loader, mean, std, device):
         mean = torch.tensor(mean).cuda().view(1, 3, 1, 1)
         std = torch.tensor(std).cuda().view(1, 3, 1, 1)
 
@@ -185,8 +185,8 @@ class PrefetchedWrapper(object):
 
         for next_input, next_target in loader:
             with torch.cuda.stream(stream):
-                next_input = next_input.cuda(non_blocking=True)
-                next_target = next_target.cuda(non_blocking=True)
+                next_input = next_input.to(device, non_blocking=True)
+                next_target = next_target.to(device, non_blocking=True)
                 next_input = next_input.sub_(mean).div_(std)
 
             if not first:
@@ -200,11 +200,12 @@ class PrefetchedWrapper(object):
 
         yield inputs, targets
 
-    def __init__(self, dataloader, mean, std):
+    def __init__(self, dataloader, mean, std, device):
         self.dataloader = dataloader
         self.epoch = 0
         self.mean = np.array(mean) * 255.0
         self.std = np.array(std) * 255.0
+        self.device = device
 
     def __iter__(self):
         if (self.dataloader.sampler is not None and
@@ -215,4 +216,5 @@ class PrefetchedWrapper(object):
         self.epoch += 1
         return PrefetchedWrapper.prefetched_loader(self.dataloader,
                                                    self.mean,
-                                                   self.std)
+                                                   self.std,
+                                                   self.device)

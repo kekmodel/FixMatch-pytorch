@@ -222,7 +222,7 @@ def main():
                    batch_size=args.batch_size,
                    num_workers=args.num_workers,
                    drop_last=True,
-                   pin_memory=True), mean, std)
+                   pin_memory=True), mean, std, args.device)
 
     unlabeled_trainloader = PrefetchedWrapper(
         DataLoader(unlabeled_dataset,
@@ -230,12 +230,12 @@ def main():
                    batch_size=args.batch_size,
                    num_workers=args.num_workers,
                    drop_last=True,
-                   pin_memory=True), mean, std)
+                   pin_memory=True), mean, std, args.device)
     test_loader = PrefetchedWrapper(
         DataLoader(test_dataset,
                    sampler=SequentialSampler(test_dataset),
                    batch_size=args.batch_size,
-                   pin_memory=True), mean, std)
+                   pin_memory=True), mean, std, args.device)
 
     if args.iteration == -1:
         args.iteration = int(65536 / (args.batch_size*args.world_size))
@@ -388,12 +388,11 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
 
         data_time.update(time.time() - end)
         batch_size = inputs_x.shape[0]
-        inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s)).to(args.device,
-                                                                  non_blocking=True)
+        inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s))
         logits = model(inputs)
         logits_x = logits[:batch_size]
         logits_u_w, logits_u_s = logits[batch_size:].chunk(2)
-        targets_x = targets_x.to(args.device, non_blocking=True)
+        # targets_x = targets_x.to(args.device, non_blocking=True)
         del logits
 
         Lx = F.cross_entropy(logits_x, targets_x, reduction='mean')
