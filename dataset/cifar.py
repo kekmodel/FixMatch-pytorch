@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-import torch
 from PIL import Image
 from torchvision import datasets
 from torchvision import transforms
@@ -58,14 +57,13 @@ def get_cifar100(root, num_labeled, num_classes):
         transforms.RandomCrop(size=32,
                               padding=int(32*0.125),
                               padding_mode='reflect'),
-        # transforms.ToTensor(),
-        # transforms.Normalize(mean=cifar100_mean, std=cifar100_std)
+        transforms.ToTensor(),
+        transforms.Normalize(mean=cifar100_mean, std=cifar100_std)
     ])
-    # transform_val = transforms.Compose([
-    #     transforms.ToTensor(),
-    #     transforms.Normalize(mean=cifar100_mean, std=cifar100_std)
-    # ])
-    transform_val = None
+    transform_val = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=cifar100_mean, std=cifar100_std)
+    ])
     base_dataset = datasets.CIFAR100(
         root, train=True, download=True)
 
@@ -104,32 +102,6 @@ def x_u_split(labels, num_labeled, num_classes):
     return labeled_idx, unlabeled_idx
 
 
-def fast_collate(batch):
-    batch_size = len(batch)
-    print('0:\n', batch[0])
-    print('00:\n', batch[0][0])
-    print('000:\n', batch[0][0][0])
-    exit()
-    if len(batch[0]) == 2:
-        targets = torch.tensor([b[1] for b in batch], dtype=torch.int64)
-        assert len(targets) == batch_size
-        inputs = torch.zeros(
-            (batch_size, *batch[0][0].shape), dtype=torch.uint8)
-        for i in range(batch_size):
-            inputs[i].copy_(batch[i][0])
-        return inputs, targets
-
-    if len(batch[0]) == 3:  # unlabaeld batch
-        input1 = torch.zeros(
-            (batch_size, *batch[0][0].shape), dtype=torch.uint8)
-        input2 = torch.zeros(
-            (batch_size, *batch[0][1].shape), dtype=torch.uint8)
-        for i in range(batch_size):
-            input1[i].copy_(batch[i][0])
-            input2[i].copy_(batch[i][1])
-        return input1, input2
-
-
 class TransformFix(object):
     def __init__(self, mean, std):
         self.weak = transforms.Compose([
@@ -139,16 +111,15 @@ class TransformFix(object):
                                   padding_mode='reflect')
         ])
         self.strong = randaugment.RandAugCutout(n=2, m=10)
-        # self.normalize = transforms.Compose([
-        #     transforms.ToTensor(),
-        #     transforms.Normalize(mean=mean, std=std)
-        # ])
+        self.normalize = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=mean, std=std)
+        ])
 
     def __call__(self, x):
         weak = self.weak(x)
         strong = self.strong(x)
-        # return self.normalize(weak), self.normalize(strong)
-        return weak, strong
+        return self.normalize(weak), self.normalize(strong)
 
 
 class CIFAR10SSL(datasets.CIFAR10):
@@ -199,159 +170,3 @@ class CIFAR100SSL(datasets.CIFAR100):
             target = self.target_transform(target)
 
         return img, target
-
-
-class PrefetchedWrapper(object):
-    def prefetched_loader(loader, mean, std, device):
-        mean = torch.tensor(mean).to(device).view(1, 3, 1, 1)
-        std = torch.tensor(std).to(device).view(1, 3, 1, 1)
-
-        stream = torch.cuda.Stream()
-        first = True
-
-        for next_input, next_target in loader:
-            with torch.cuda.stream(stream):
-                next_input = next_input.to(device, non_blocking=True)
-                next_target = next_target.to(device, non_blocking=True)
-                next_input = next_input.float().sub_(mean).div_(std)
-
-            if not first:
-                yield inputs, targets
-            else:
-                first = False
-
-            torch.cuda.current_stream().wait_stream(stream)
-            inputs = next_input
-            targets = next_target
-
-        yield inputs, targets
-
-    def __init__(self, dataloader, mean, std, device):
-        self.dataloader = dataloader
-        self.epoch = 0
-        self.mean = [x * 255 for x in mean]
-        self.std = [x * 255 for x in std]
-        self.device = device
-
-    def __len__(self):
-        return len(self.dataloader)
-
-    def __iter__(self):
-        if (self.dataloader.sampler is not None and
-            isinstance(self.dataloader.sampler,
-                       torch.utils.data.distributed.DistributedSampler)):
-
-            self.dataloader.sampler.set_epoch(self.epoch)
-        self.epoch += 1
-        return PrefetchedWrapper.prefetched_loader(self.dataloader,
-                                                   self.mean,
-                                                   self.std,
-                                                   self.device)
-
-
-class PrefetchedWrapperX(object):
-    def prefetched_loader(loader, mean, std, device):
-        mean = torch.tensor(mean).to(device).view(1, 3, 1, 1)
-        std = torch.tensor(std).to(device).view(1, 3, 1, 1)
-
-        stream = torch.cuda.Stream()
-        first = True
-        loader_iter = iter(loader)
-
-        try:
-            next_input, next_target = loader_iter.next()
-        except:
-            loader_iter = iter(loader)
-            next_input, next_target = loader_iter.next()
-
-        with torch.cuda.stream(stream):
-            next_input = next_input.to(device, non_blocking=True)
-            next_target = next_target.to(device, non_blocking=True)
-            next_input = next_input.float().sub_(mean).div_(std)
-
-            if not first:
-                yield inputs, targets
-            else:
-                first = False
-
-            torch.cuda.current_stream().wait_stream(stream)
-            inputs = next_input
-            targets = next_target
-
-        yield inputs, targets
-
-    def __init__(self, dataloader, mean, std, device):
-        self.dataloader = dataloader
-        self.epoch = 0
-        self.mean = [x * 255 for x in mean]
-        self.std = [x * 255 for x in std]
-        self.device = device
-
-    def __len__(self):
-        return len(self.dataloader)
-
-    def __iter__(self):
-        if (self.dataloader.sampler is not None and
-            isinstance(self.dataloader.sampler,
-                       torch.utils.data.distributed.DistributedSampler)):
-
-            self.dataloader.sampler.set_epoch(self.epoch)
-        self.epoch += 1
-        return PrefetchedWrapper.prefetched_loader(self.dataloader,
-                                                   self.mean,
-                                                   self.std,
-                                                   self.device)
-
-
-class PrefetchedWrapperU(object):
-    def prefetched_loader(loader, mean, std, device):
-        mean = torch.tensor(mean).to(device).view(1, 3, 1, 1)
-        std = torch.tensor(std).to(device).view(1, 3, 1, 1)
-
-        stream = torch.cuda.Stream()
-        first = True
-        loader_iter = iter(loader)
-
-        try:
-            next_input_w, next_input_s = loader_iter.next()
-        except:
-            loader_iter = iter(loader)
-            next_input_w, next_input_s = loader_iter.next()
-
-        with torch.cuda.stream(stream):
-            next_input_w = next_input_w.to(device, non_blocking=True)
-            next_input_s = next_input_s.to(device, non_blocking=True)
-            next_input_w = next_input_w.float().sub_(mean).div_(std)
-            next_input_s = next_input_s.float().sub_(mean).div_(std)
-
-            if not first:
-                yield input_w, input_s
-            else:
-                first = False
-
-            torch.cuda.current_stream().wait_stream(stream)
-            input_w, input_s = next_input_w, next_input_s
-
-        yield input_w, input_s
-
-    def __init__(self, dataloader, mean, std, device):
-        self.dataloader = dataloader
-        self.epoch = 0
-        self.mean = [x * 255 for x in mean]
-        self.std = [x * 255 for x in std]
-        self.device = device
-
-    def __len__(self):
-        return len(self.dataloader)
-
-    def __iter__(self):
-        if (self.dataloader.sampler is not None and
-            isinstance(self.dataloader.sampler,
-                       torch.utils.data.distributed.DistributedSampler)):
-
-            self.dataloader.sampler.set_epoch(self.epoch)
-        self.epoch += 1
-        return PrefetchedWrapper.prefetched_loader(self.dataloader,
-                                                   self.mean,
-                                                   self.std,
-                                                   self.device)
