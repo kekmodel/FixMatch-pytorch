@@ -243,7 +243,8 @@ def main():
                           momentum=0.9,
                           nesterov=args.nesterov)
 
-    args.total_steps = args.epochs * int(args.k_img / args.batch_size)
+    args.iteration = int(args.k_img / args.batch_size)
+    args.total_steps = args.epochs * args.iteration
     scheduler = get_cosine_schedule_with_warmup(
         optimizer, args.warmup * len(unlabeled_trainloader), args.total_steps)
 
@@ -358,26 +359,10 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
 
     train_loader = zip(labeled_trainloader, unlabeled_trainloader)
 
-    # labeled_train_iter = iter(labeled_trainloader)
-    # unlabeled_train_iter = iter(unlabeled_trainloader)
-
-    # p_bar = range(args.iteration)
     if not args.no_progress:
-        train_loader = tqdm(train_loader,
-                            disable=args.local_rank not in [-1, 0])
+        p_bar = tqdm(range(args.iteration),
+                     disable=args.local_rank not in [-1, 0])
 
-    # for batch_idx in p_bar:
-    #     try:
-    #         inputs_x, targets_x = labeled_train_iter.next()
-    #     except:
-    #         labeled_train_iter = iter(labeled_trainloader)
-    #         inputs_x, targets_x = labeled_train_iter.next()
-
-    #     try:
-    #         (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
-    #     except:
-    #         unlabeled_train_iter = iter(unlabeled_trainloader)
-    #         (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
     for batch_idx, (data_x, data_u) in enumerate(train_loader):
         inputs_x, targets_x = data_x
         (inputs_u_w, inputs_u_s), _ = data_u
@@ -420,11 +405,11 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
         end = time.time()
         mask_prob = mask.mean().item()
         if not args.no_progress:
-            train_loader.set_description('Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.6f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. Mask: {mask:.4f}. '.format(
+            p_bar.set_description('Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.6f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. Mask: {mask:.4f}. '.format(
                 epoch=epoch + 1,
                 epochs=args.epochs,
                 batch=batch_idx + 1,
-                iter=len(labeled_trainloader),
+                iter=args.iteration,
                 lr=scheduler.get_last_lr()[0],
                 data=data_time.avg,
                 bt=batch_time.avg,
