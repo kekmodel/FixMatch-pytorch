@@ -105,42 +105,29 @@ def x_u_split(labels, num_labeled, num_classes):
 
 
 def fast_collate(batch):
-    """ A fast collation function optimized for uint8 images (np array or torch) and int64 targets (labels)"""
+    print(type(batch[0][0]))
+    exit()
     assert isinstance(batch[0], tuple)
     batch_size = len(batch)
-    if isinstance(batch[0][0], tuple):
-        # This branch 'deinterleaves' and flattens tuples of input tensors into one tensor ordered by position
-        # such that all tuple of position n will end up in a torch.split(tensor, batch_size) in nth position
-        inner_tuple_size = len(batch[0][0])
-        flattened_batch_size = batch_size * inner_tuple_size
-        targets = torch.zeros(flattened_batch_size, dtype=torch.int64)
-        tensor = torch.zeros(
-            (flattened_batch_size, *batch[0][0][0].shape), dtype=torch.uint8)
-        for i in range(batch_size):
-            # all input tensor tuples must be same length
-            assert len(batch[i][0]) == inner_tuple_size
-            for j in range(inner_tuple_size):
-                targets[i + j * batch_size] = batch[i][1]
-                tensor[i + j * batch_size] += torch.from_numpy(batch[i][0][j])
-        return tensor, targets
-    elif isinstance(batch[0][0], np.ndarray):
-        targets = torch.tensor([b[1] for b in batch], dtype=torch.int64)
-        assert len(targets) == batch_size
-        tensor = torch.zeros(
-            (batch_size, *batch[0][0].shape), dtype=torch.uint8)
-        for i in range(batch_size):
-            tensor[i] += torch.from_numpy(batch[i][0])
-        return tensor, targets
-    elif isinstance(batch[0][0], torch.Tensor):
-        targets = torch.tensor([b[1] for b in batch], dtype=torch.int64)
-        assert len(targets) == batch_size
-        tensor = torch.zeros(
-            (batch_size, *batch[0][0].shape), dtype=torch.uint8)
-        for i in range(batch_size):
-            tensor[i].copy_(batch[i][0])
-        return tensor, targets
-    else:
-        assert False
+    targets = torch.tensor([b[1] for b in batch], dtype=torch.int64)
+    assert len(targets) == batch_size
+    tensor = torch.zeros(
+        (batch_size, *batch[0][0].shape), dtype=torch.uint8)
+    for i in range(batch_size):
+        tensor[i].copy_(batch[i][0])
+    return tensor, targets
+
+
+def fast_collate_u(batch):
+    assert isinstance(batch[0], tuple)
+    batch_size = len(batch)
+    targets = torch.tensor([b[1] for b in batch], dtype=torch.int64)
+    assert len(targets) == batch_size
+    tensor = torch.zeros(
+        (batch_size, *batch[0][0].shape), dtype=torch.uint8)
+    for i in range(batch_size):
+        tensor[i].copy_(batch[i][0])
+    return tensor, targets
 
 
 class TransformFix(object):
@@ -178,7 +165,7 @@ class CIFAR10SSL(datasets.CIFAR10):
 
     def __getitem__(self, index):
         img, target = self.data[index], self.targets[index]
-        # img = Image.fromarray(img)
+        img = Image.fromarray(img)
 
         if self.transform is not None:
             img = self.transform(img)
@@ -203,7 +190,7 @@ class CIFAR100SSL(datasets.CIFAR100):
 
     def __getitem__(self, index):
         img, target = self.data[index], self.targets[index]
-        # img = Image.fromarray(img)
+        img = Image.fromarray(img)
 
         if self.transform is not None:
             img = self.transform(img)
