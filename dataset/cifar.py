@@ -106,6 +106,10 @@ def x_u_split(labels, num_labeled, num_classes):
 
 def fast_collate(batch):
     batch_size = len(batch)
+    print('0:\n', batch[0])
+    print('00:\n', batch[0][0])
+    print('000:\n', batch[0][0][0])
+    exit()
     if len(batch[0]) == 2:
         targets = torch.tensor([b[1] for b in batch], dtype=torch.int64)
         assert len(targets) == batch_size
