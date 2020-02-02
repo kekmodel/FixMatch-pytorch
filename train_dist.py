@@ -24,14 +24,18 @@ except ImportError:
     raise ImportError(
         "Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
 
-from dataset import cifar
+from dataset.cifar import (PrefetchedWrapper,
+                           get_cifar10, get_cifar100,
+                           cifar10_mean, cifar10_std,
+                           cifar100_mean, cifar100_std)
 from utils import AverageMeter, accuracy
 
 logger = logging.getLogger(__name__)
 
-DATASET_GETTERS = {
-    'cifar10': cifar.get_cifar10,
-    'cifar100': cifar.get_cifar100}
+DATASET_GETTERS = {'cifar10': get_cifar10,
+                   'cifar100': get_cifar100}
+CIFAR_MOMENTS = {'cifar10': (cifar10_mean, cifar10_std),
+                 'cifar100': (cifar10_mean, cifar10_std)}
 
 best_acc = 0
 
@@ -210,20 +214,28 @@ def main():
 
     model.to(args.device)
 
-    sampler = RandomSampler if args.local_rank == -1 else DistributedSampler
-    labeled_trainloader = DataLoader(labeled_dataset,
-                                     sampler=sampler(labeled_dataset),
-                                     batch_size=args.batch_size,
-                                     num_workers=args.num_workers,
-                                     drop_last=True, pin_memory=True)
-    unlabeled_trainloader = DataLoader(unlabeled_dataset,
-                                       sampler=sampler(unlabeled_dataset),
-                                       batch_size=args.batch_size,
-                                       num_workers=args.num_workers,
-                                       drop_last=True, pin_memory=True)
-    test_loader = DataLoader(test_dataset,
-                             sampler=SequentialSampler(test_dataset),
-                             batch_size=args.batch_size, pin_memory=True)
+    mean, std = CIFAR_MOMENTS[args.dataset]
+    train_sampler = RandomSampler if args.local_rank == -1 else DistributedSampler
+    labeled_trainloader = PrefetchedWrapper(
+        DataLoader(labeled_dataset,
+                   sampler=train_sampler(labeled_dataset),
+                   batch_size=args.batch_size,
+                   num_workers=args.num_workers,
+                   drop_last=True,
+                   pin_memory=True), mean, std)
+
+    unlabeled_trainloader = PrefetchedWrapper(
+        DataLoader(unlabeled_dataset,
+                   sampler=train_sampler(unlabeled_dataset),
+                   batch_size=args.batch_size,
+                   num_workers=args.num_workers,
+                   drop_last=True,
+                   pin_memory=True), mean, std)
+    test_loader = PrefetchedWrapper(
+        DataLoader(test_dataset,
+                   sampler=SequentialSampler(test_dataset),
+                   batch_size=args.batch_size,
+                   pin_memory=True), mean, std)
 
     if args.iteration == -1:
         args.iteration = int(65536 / (args.batch_size*args.world_size))

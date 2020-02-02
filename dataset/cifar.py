@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+import torch
 from PIL import Image
 from torchvision import datasets
 from torchvision import transforms
@@ -57,13 +58,14 @@ def get_cifar100(root, num_labeled, num_classes):
         transforms.RandomCrop(size=32,
                               padding=int(32*0.125),
                               padding_mode='reflect'),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=cifar100_mean, std=cifar100_std)
+        # transforms.ToTensor(),
+        # transforms.Normalize(mean=cifar100_mean, std=cifar100_std)
     ])
-    transform_val = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=cifar100_mean, std=cifar100_std)
-    ])
+    # transform_val = transforms.Compose([
+    #     transforms.ToTensor(),
+    #     transforms.Normalize(mean=cifar100_mean, std=cifar100_std)
+    # ])
+    transform_val = None
     base_dataset = datasets.CIFAR100(
         root, train=True, download=True)
 
@@ -111,15 +113,16 @@ class TransformFix(object):
                                   padding_mode='reflect')
         ])
         self.strong = randaugment.RandAugCutout(n=2, m=10)
-        self.normalize = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std)
-        ])
+        # self.normalize = transforms.Compose([
+        #     transforms.ToTensor(),
+        #     transforms.Normalize(mean=mean, std=std)
+        # ])
 
     def __call__(self, x):
         weak = self.weak(x)
         strong = self.strong(x)
-        return self.normalize(weak), self.normalize(strong)
+        # return self.normalize(weak), self.normalize(strong)
+        return weak, strong
 
 
 class CIFAR10SSL(datasets.CIFAR10):
@@ -170,3 +173,46 @@ class CIFAR100SSL(datasets.CIFAR100):
             target = self.target_transform(target)
 
         return img, target
+
+
+class PrefetchedWrapper(object):
+    def prefetched_loader(loader, mean, std):
+        mean = torch.tensor(mean).cuda().view(1, 3, 1, 1)
+        std = torch.tensor(std).cuda().view(1, 3, 1, 1)
+
+        stream = torch.cuda.Stream()
+        first = True
+
+        for next_input, next_target in loader:
+            with torch.cuda.stream(stream):
+                next_input = next_input.cuda(non_blocking=True)
+                next_target = next_target.cuda(non_blocking=True)
+                next_input = next_input.sub_(mean).div_(std)
+
+            if not first:
+                yield inputs, targets
+            else:
+                first = False
+
+            torch.cuda.current_stream().wait_stream(stream)
+            inputs = next_input
+            targets = next_target
+
+        yield inputs, targets
+
+    def __init__(self, dataloader, mean, std):
+        self.dataloader = dataloader
+        self.epoch = 0
+        self.mean = np.array(mean) * 255.0
+        self.std = np.array(std) * 255.0
+
+    def __iter__(self):
+        if (self.dataloader.sampler is not None and
+            isinstance(self.dataloader.sampler,
+                       torch.utils.data.distributed.DistributedSampler)):
+
+            self.dataloader.sampler.set_epoch(self.epoch)
+        self.epoch += 1
+        return PrefetchedWrapper.prefetched_loader(self.dataloader,
+                                                   self.mean,
+                                                   self.std)
