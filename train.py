@@ -123,15 +123,15 @@ def main():
     def create_model(args):
         if args.arch == 'wideresnet':
             import models.wideresnet as models
-            model = models.build_wideresnet(depth=args.depth,
-                                            widen_factor=args.width,
+            model = models.build_wideresnet(depth=args.model_depth,
+                                            widen_factor=args.model_width,
                                             dropout=0,
                                             num_classes=args.num_classes)
         elif args.arch == 'resnext':
             import models.resnext as models
-            model = models.build_resnext(cardinality=args.cardinality,
-                                         depth=args.depth,
-                                         width=args.width,
+            model = models.build_resnext(cardinality=args.model_cardinality,
+                                         depth=args.model_depth,
+                                         width=args.model_width,
                                          num_classes=args.num_classes)
 
         logger.info('Total params: {:.2f}M'.format(
@@ -155,22 +155,22 @@ def main():
     if args.dataset == 'cifar10':
         args.num_classes = 10
         if args.arch == 'wideresnet':
-            args.depth = 28
-            args.width = 2
+            args.model_depth = 28
+            args.model_width = 2
         if args.arch == 'resnext':
-            args.cardinality = 4
-            args.depth = 28
-            args.width = 4
+            args.model_cardinality = 4
+            args.model_depth = 28
+            args.model_width = 4
 
     elif args.dataset == 'cifar100':
         args.num_classes = 100
         if args.arch == 'wideresnet':
-            args.depth = 28
-            args.width = 10
+            args.model_depth = 28
+            args.model_width = 10
         if args.arch == 'resnext':
-            args.cardinality = 8
-            args.depth = 29
-            args.width = 64
+            args.model_cardinality = 8
+            args.model_depth = 29
+            args.model_width = 64
 
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
