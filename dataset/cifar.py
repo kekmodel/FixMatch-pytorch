@@ -115,7 +115,7 @@ def fast_collate(batch):
         flattened_batch_size = batch_size * inner_tuple_size
         targets = torch.zeros(flattened_batch_size, dtype=torch.int64)
         tensor = torch.zeros(
-            (flattened_batch_size, *batch[0][0][0].shape), dtype=torch.uint8)
+            (flattened_batch_size, *batch[0][0][0].size), dtype=torch.uint8)
         for i in range(batch_size):
             # all input tensor tuples must be same length
             assert len(batch[i][0]) == inner_tuple_size
@@ -127,7 +127,7 @@ def fast_collate(batch):
         targets = torch.tensor([b[1] for b in batch], dtype=torch.int64)
         assert len(targets) == batch_size
         tensor = torch.zeros(
-            (batch_size, *batch[0][0].shape), dtype=torch.uint8)
+            (batch_size, *batch[0][0].size), dtype=torch.uint8)
         for i in range(batch_size):
             tensor[i] += torch.from_numpy(batch[i][0])
         return tensor, targets
@@ -135,7 +135,7 @@ def fast_collate(batch):
         targets = torch.tensor([b[1] for b in batch], dtype=torch.int64)
         assert len(targets) == batch_size
         tensor = torch.zeros(
-            (batch_size, *batch[0][0].shape), dtype=torch.uint8)
+            (batch_size, *batch[0][0].size), dtype=torch.uint8)
         for i in range(batch_size):
             tensor[i].copy_(batch[i][0])
         return tensor, targets
