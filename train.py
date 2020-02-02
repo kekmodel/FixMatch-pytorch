@@ -79,8 +79,6 @@ def main():
                         help='number of total epochs to run')
     parser.add_argument('--start-epoch', default=0, type=int,
                         help='manual epoch number (useful on restarts)')
-    parser.add_argument('--iteration', type=int, default=1024,
-                        help='number of iterations')
     parser.add_argument('--batch-size', default=64, type=int,
                         help='train batchsize')
     parser.add_argument('--lr', '--learning-rate', default=0.03, type=float,
@@ -91,22 +89,24 @@ def main():
                         help='weight decay')
     parser.add_argument('--nesterov', action='store_true', default=True,
                         help='use nesterov momentum')
-    parser.add_argument('--out', default='result',
-                        help='Directory to output the result')
-    parser.add_argument('--resume', default='', type=str,
-                        help='path to latest checkpoint (default: none)')
-    parser.add_argument('--seed', type=int, default=-1,
-                        help="random seed (-1: don't use random seed)")
+    parser.add_argument('--use-ema', action='store_true', default=True,
+                        help='use EMA model')
+    parser.add_argument('--ema-decay', default=0.999, type=float,
+                        help='EMA decay rate')
     parser.add_argument('--mu', default=7, type=int,
                         help='coefficient of unlabeled batch size')
     parser.add_argument('--lambda-u', default=1, type=float,
                         help='coefficient of unlabeled loss')
     parser.add_argument('--threshold', default=0.95, type=float,
                         help='pseudo label threshold')
-    parser.add_argument('--use-ema', action='store_true', default=True,
-                        help='use EMA model')
-    parser.add_argument('--ema-decay', default=0.999, type=float,
-                        help='EMA decay rate')
+    parser.add_argument('--k-img', default=65536, type=int,
+                        help='number of labeled examples')
+    parser.add_argument('--out', default='result',
+                        help='directory to output the result')
+    parser.add_argument('--resume', default='', type=str,
+                        help='path to latest checkpoint (default: none)')
+    parser.add_argument('--seed', type=int, default=-1,
+                        help="random seed (-1: don't use random seed)")
     parser.add_argument("--amp", action="store_true",
                         help="use 16-bit (mixed) precision through NVIDIA apex AMP")
     parser.add_argument("--opt_level", type=str, default="O1",
@@ -198,7 +198,7 @@ def main():
         torch.distributed.barrier()
 
     labeled_dataset, unlabeled_dataset, test_dataset = DATASET_GETTERS[args.dataset](
-        './data', args.num_labeled, args.num_classes)
+        './data', args.num_labeled, args.k_img, args.k_img * args.mu)
 
     model = create_model(args)
 
@@ -243,7 +243,7 @@ def main():
                           momentum=0.9,
                           nesterov=args.nesterov)
 
-    args.total_steps = args.epochs * args.iteration
+    args.total_steps = args.epochs * int(args.k_img / args.batch_size)
     scheduler = get_cosine_schedule_with_warmup(
         optimizer, args.warmup * len(unlabeled_trainloader), args.total_steps)
 
@@ -354,29 +354,32 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
     losses_u = AverageMeter()
     end = time.time()
 
-    labeled_train_iter = iter(labeled_trainloader)
-    unlabeled_train_iter = iter(unlabeled_trainloader)
-
     model.train()
 
-    p_bar = range(args.iteration)
+    train_loader = zip(labeled_trainloader, unlabeled_trainloader)
+
+    # labeled_train_iter = iter(labeled_trainloader)
+    # unlabeled_train_iter = iter(unlabeled_trainloader)
+
+    # p_bar = range(args.iteration)
     if not args.no_progress:
-        p_bar = tqdm(p_bar,
-                     disable=args.local_rank not in [-1, 0])
+        train_loader = tqdm(train_loader,
+                            disable=args.local_rank not in [-1, 0])
 
-    for batch_idx in p_bar:
-        try:
-            inputs_x, targets_x = labeled_train_iter.next()
-        except:
-            labeled_train_iter = iter(labeled_trainloader)
-            inputs_x, targets_x = labeled_train_iter.next()
+    # for batch_idx in p_bar:
+    #     try:
+    #         inputs_x, targets_x = labeled_train_iter.next()
+    #     except:
+    #         labeled_train_iter = iter(labeled_trainloader)
+    #         inputs_x, targets_x = labeled_train_iter.next()
 
-        try:
-            (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
-        except:
-            unlabeled_train_iter = iter(unlabeled_trainloader)
-            (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
-
+    #     try:
+    #         (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
+    #     except:
+    #         unlabeled_train_iter = iter(unlabeled_trainloader)
+    #         (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
+    for batch_idx, (inputs_x, targets_x), (inputs_u, _) in enumerate(train_loader):
+        inputs_u_w, inputs_u_s = inputs_u
         data_time.update(time.time() - end)
         batch_size = inputs_x.shape[0]
         inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s)).to(args.device)
@@ -411,17 +414,16 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
         if ema_model is not None:
             ema_model.update(model)
         model.zero_grad()
-        torch.cuda.synchronize()
 
         batch_time.update(time.time() - end)
         end = time.time()
         mask_prob = mask.mean().item()
         if not args.no_progress:
-            p_bar.set_description('Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.6f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. Mask: {mask:.4f}. '.format(
+            train_loader.set_description('Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.6f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. Mask: {mask:.4f}. '.format(
                 epoch=epoch + 1,
                 epochs=args.epochs,
                 batch=batch_idx + 1,
-                iter=args.iteration,
+                iter=len(labeled_trainloader),
                 lr=scheduler.get_last_lr()[0],
                 data=data_time.avg,
                 bt=batch_time.avg,
@@ -431,7 +433,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
                 mask=mask_prob,
             ))
     if not args.no_progress:
-        p_bar.close()
+        train_loader.close()
     return losses.avg, losses_x.avg, losses_u.avg, mask_prob
 
 
@@ -443,13 +445,12 @@ def test(args, test_loader, model, epoch):
     top5 = AverageMeter()
     end = time.time()
 
-    p_bar = test_loader
     if not args.no_progress:
-        p_bar = tqdm(test_loader,
-                     disable=args.local_rank not in [-1, 0])
+        test_loader = tqdm(test_loader,
+                           disable=args.local_rank not in [-1, 0])
 
     with torch.no_grad():
-        for batch_idx, (inputs, targets) in enumerate(p_bar):
+        for batch_idx, (inputs, targets) in enumerate(test_loader):
             data_time.update(time.time() - end)
             model.eval()
 
@@ -466,7 +467,7 @@ def test(args, test_loader, model, epoch):
             batch_time.update(time.time() - end)
             end = time.time()
             if not args.no_progress:
-                p_bar.set_description('Test Iter: {batch:4}/{iter:4}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. top1: {top1:.2f}. top5: {top5:.2f}. '.format(
+                test_loader.set_description('Test Iter: {batch:4}/{iter:4}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. top1: {top1:.2f}. top5: {top5:.2f}. '.format(
                     batch=batch_idx + 1,
                     iter=len(test_loader),
                     data=data_time.avg,
@@ -476,7 +477,7 @@ def test(args, test_loader, model, epoch):
                     top5=top5.avg,
                 ))
         if not args.no_progress:
-            p_bar.close()
+            test_loader.close()
 
     logger.info("top-1 acc: {:.2f}".format(top1.avg))
     logger.info("top-5 acc: {:.2f}".format(top5.avg))
