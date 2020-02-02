@@ -354,7 +354,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
     losses_u = AverageMeter()
     end = time.time()
 
-    labeled_train_iter = labeled_trainloader
+    labeled_train_iter = iter(labeled_trainloader)
     unlabeled_train_iter = iter(unlabeled_trainloader)
 
     model.train()
