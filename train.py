@@ -66,12 +66,12 @@ def main():
     parser.add_argument('--gpu-id', default='0', type=int,
                         help='id(s) for CUDA_VISIBLE_DEVICES')
     parser.add_argument('--num-workers', type=int, default=4,
-                        help='Number of workers')
+                        help='number of workers')
     parser.add_argument('--dataset', default='cifar10', type=str,
                         choices=['cifar10', 'cifar100'],
                         help='dataset name')
     parser.add_argument('--num-labeled', type=int, default=4000,
-                        help='Number of labeled data')
+                        help='number of labeled data')
     parser.add_argument('--arch', default='wideresnet', type=str,
                         choices=['wideresnet', 'resnext'],
                         help='dataset name')
@@ -79,9 +79,8 @@ def main():
                         help='number of total epochs to run')
     parser.add_argument('--start-epoch', default=0, type=int,
                         help='manual epoch number (useful on restarts)')
-    parser.add_argument('--iteration', type=int, default=-1,
-                        help='Number of iterations '
-                        '(-1: automatic calculation to learn 65536 examples.)')
+    parser.add_argument('--iteration', type=int, default=1024,
+                        help='number of iterations')
     parser.add_argument('--batch-size', default=64, type=int,
                         help='train batchsize')
     parser.add_argument('--lr', '--learning-rate', default=0.03, type=float,
@@ -142,14 +141,16 @@ def main():
 
     if args.local_rank == -1:
         device = torch.device("cuda", args.gpu_id)
+        args.world_size = 1
         args.n_gpu = torch.cuda.device_count()
     else:
         torch.cuda.set_device(args.local_rank)
         device = torch.device("cuda", args.local_rank)
         torch.distributed.init_process_group(backend="nccl")
+        args.world_size = torch.distributed.get_world_size()
         args.n_gpu = 1
+
     args.device = device
-    args.world_size = torch.distributed.get_world_size() if args.local_rank != -1 else 1
 
     if args.dataset == 'cifar10':
         args.num_classes = 10
@@ -175,6 +176,7 @@ def main():
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
         level=logging.INFO if args.local_rank in [-1, 0] else logging.WARN)
+
     logger.warning(
         "Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s",
         args.local_rank,
@@ -182,6 +184,7 @@ def main():
         args.n_gpu,
         bool(args.local_rank != -1),
         args.amp)
+
     logger.info(dict(args._get_kwargs()))
 
     if args.seed != -1:
@@ -225,10 +228,6 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers)
 
-    if args.iteration == -1:
-        args.iteration = int(65536 / (args.batch_size*args.world_size))
-    args.total_steps = args.epochs * args.iteration
-
     no_decay = ["bias", "bn"]
     grouped_parameters = [
         {
@@ -244,6 +243,7 @@ def main():
                           momentum=0.9,
                           nesterov=args.nesterov)
 
+    args.total_steps = args.epochs * args.iteration
     scheduler = get_cosine_schedule_with_warmup(
         optimizer, args.warmup * len(unlabeled_trainloader), args.total_steps)
 
