@@ -285,7 +285,7 @@ def main():
     logger.info("***** Running training *****")
     logger.info(f"  Task = {args.dataset}@{args.num_labeled}")
     logger.info(f"  Num Epochs = {args.epochs}")
-    logger.info(f"  Instantaneous batch size per GPU = {args.batch_size}")
+    logger.info(f"  batch size per GPU = {args.batch_size}")
     logger.info(
         f"  Total train batch size = {args.batch_size*args.world_size}")
     logger.info(f"  Total optimization steps = {args.total_steps}")
