@@ -24,11 +24,11 @@ def get_cifar10(root, num_labeled, num_expand_x, num_expand_u):
                               padding=int(32*0.125),
                               padding_mode='reflect'),
         transforms.ToTensor(),
-        transforms.Normalize(mean=normal_mean, std=normal_std)
+        # transforms.Normalize(mean=normal_mean, std=normal_std)
     ])
     transform_val = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean=normal_mean, std=normal_std)
+        # transforms.Normalize(mean=normal_mean, std=normal_std)
     ])
     base_dataset = datasets.CIFAR10(
         root, train=True, download=True)
@@ -61,11 +61,11 @@ def get_cifar100(root, num_labeled, num_expand_x, num_expand_u):
                               padding=int(32*0.125),
                               padding_mode='reflect'),
         transforms.ToTensor(),
-        transforms.Normalize(mean=normal_mean, std=normal_std)
+        # transforms.Normalize(mean=normal_mean, std=normal_std)
     ])
     transform_val = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean=normal_mean, std=normal_std)
+        # transforms.Normalize(mean=normal_mean, std=normal_std)
     ])
     base_dataset = datasets.CIFAR100(
         root, train=True, download=True)
@@ -117,7 +117,7 @@ class TransformFix(object):
         self.strong = randaugment.RandAugCutout(n=2, m=10)
         self.normalize = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std)
+            # transforms.Normalize(mean=mean, std=std)
         ])
 
     def __call__(self, x):
