@@ -181,7 +181,6 @@ def main():
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
         level=logging.INFO if args.local_rank in [-1, 0] else logging.WARN)
-    logger.info(dict(args._get_kwargs()))
     logger.warning(
         "Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s",
         args.local_rank,
@@ -189,6 +188,7 @@ def main():
         args.n_gpu,
         bool(args.local_rank != -1),
         args.amp)
+    logger.info(dict(args._get_kwargs()))
 
     if args.seed != -1:
         set_seed(args)
@@ -215,15 +215,15 @@ def main():
                                      sampler=sampler(labeled_dataset),
                                      batch_size=args.batch_size,
                                      num_workers=args.num_workers,
-                                     drop_last=True)
+                                     drop_last=True, pin_memory=True)
     unlabeled_trainloader = DataLoader(unlabeled_dataset,
                                        sampler=sampler(unlabeled_dataset),
                                        batch_size=args.batch_size,
                                        num_workers=args.num_workers,
-                                       drop_last=True)
+                                       drop_last=True, pin_memory=True)
     test_loader = DataLoader(test_dataset,
                              sampler=SequentialSampler(test_dataset),
-                             batch_size=args.batch_size)
+                             batch_size=args.batch_size, pin_memory=True)
 
     if args.iteration == -1:
         args.iteration = int(65536 / (args.batch_size*args.world_size))
@@ -376,7 +376,8 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
 
         data_time.update(time.time() - end)
         batch_size = inputs_x.shape[0]
-        inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s)).to(args.device)
+        inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s)).to(args.device,
+                                                                  non_blocking=True)
         logits = model(inputs)
         logits_x = logits[:batch_size]
         logits_u_w, logits_u_s = logits[batch_size:].chunk(2)
