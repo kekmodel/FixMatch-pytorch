@@ -86,7 +86,7 @@ def main():
                         help='train batchsize')
     parser.add_argument('--lr', '--learning-rate', default=0.03, type=float,
                         help='initial learning rate')
-    parser.add_argument('--warmup', default=5, type=float,
+    parser.add_argument('--warmup', default=0, type=float,
                         help='warmup epochs (unlabeled data based)')
     parser.add_argument('--wdecay', default=5e-4, type=float,
                         help='weight decay')
