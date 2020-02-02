@@ -27,6 +27,7 @@ except ImportError:
 from dataset.cifar import (PrefetchedWrapper,
                            PrefetchedWrapperX,
                            PrefetchedWrapperU,
+                           fast_collate,
                            get_cifar10, get_cifar100,
                            cifar10_mean, cifar10_std,
                            cifar100_mean, cifar100_std)
@@ -223,6 +224,7 @@ def main():
                    sampler=train_sampler(labeled_dataset),
                    batch_size=args.batch_size,
                    num_workers=args.num_workers,
+                   collate_fn=fast_collate,
                    drop_last=True,
                    pin_memory=True), mean, std, args.device)
 
@@ -231,12 +233,15 @@ def main():
                    sampler=train_sampler(unlabeled_dataset),
                    batch_size=args.batch_size,
                    num_workers=args.num_workers,
+                   collate_fn=fast_collate,
                    drop_last=True,
                    pin_memory=True), mean, std, args.device)
     test_loader = PrefetchedWrapper(
         DataLoader(test_dataset,
                    sampler=SequentialSampler(test_dataset),
                    batch_size=args.batch_size,
+                   num_workers=args.num_workers,
+                   collate_fn=fast_collate,
                    pin_memory=True), mean, std, args.device)
 
     if args.iteration == -1:
