@@ -56,10 +56,12 @@ parser.add_argument('--iteration', type=int, default=-1,
                     '(-1: automatic calculation to learn 65536 examples.)')
 parser.add_argument('--out', default='result',
                     help='Directory to output the result')
+parser.add_argument('--mu', default=7, type=int,
+                    help='coefficient of unlabeled batch size')
+parser.add_argument('--lambda-u', default=1, type=float,
+                    help='coefficient of unlabeled loss')
 parser.add_argument('--threshold', default=0.95, type=float,
                     help='pseudo label threshold')
-parser.add_argument('--mu', default=7, type=float,
-                    help='coefficient of unlabeled batch size')
 parser.add_argument('--use-ema', action='store_true', default=True,
                     help='use EMA model')
 parser.add_argument('--no-progress', action='store_true',
@@ -70,7 +72,8 @@ parser.add_argument("--local_rank", type=int, default=-1,
                     help="For distributed training: local_rank")
 
 args = parser.parse_args()
-state = {k: v for k, v in args._get_kwargs()}
+state = dict(args._get_kwargs())
+print(state)
 device = torch.device("cuda", args.gpu_id)
 
 if args.dataset == 'cifar10':
@@ -97,8 +100,8 @@ elif args.dataset == 'cifar100':
 
 if args.seed != -1:
     random.seed(args.seed)
-    np.random.seed(12+args.seed)
-    torch.manual_seed(24+args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
 
 best_acc = 0
 
@@ -306,7 +309,7 @@ def train(labeled_trainloader, unlabeled_trainloader, model,
 
         Lu = (F.cross_entropy(logits_u_s, targets_u,
                               reduction='none') * mask).mean()
-        loss = Lx + Lu
+        loss = Lx + args.lambda_u * Lu
 
         losses.update(loss.item())
         losses_x.update(Lx.item())

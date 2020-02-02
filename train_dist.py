@@ -40,8 +40,8 @@ def save_checkpoint(state, is_best, checkpoint, filename='checkpoint.pth.tar'):
     filepath = os.path.join(checkpoint, filename)
     torch.save(state, filepath)
     if is_best:
-        shutil.copyfile(filepath, os.path.join(
-            checkpoint, 'model_best.pth.tar'))
+        shutil.copyfile(filepath, os.path.join(checkpoint,
+                                               'model_best.pth.tar'))
 
 
 def set_seed(args):
@@ -125,6 +125,7 @@ def main():
                         help="don't use prgress bar")
 
     args = parser.parse_args()
+    logger.info(dict(args._get_kwargs()))
     global best_acc
 
     def create_model(args):
