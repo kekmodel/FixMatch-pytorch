@@ -226,7 +226,7 @@ class PrefetchedWrapper(object):
             with torch.cuda.stream(stream):
                 next_input = next_input.to(device, non_blocking=True)
                 next_target = next_target.to(device, non_blocking=True)
-                next_input = next_input.sub_(mean).div_(std)
+                next_input = next_input.float().sub_(mean).div_(std)
 
             if not first:
                 yield inputs, targets
@@ -280,7 +280,7 @@ class PrefetchedWrapperX(object):
         with torch.cuda.stream(stream):
             next_input = next_input.to(device, non_blocking=True)
             next_target = next_target.to(device, non_blocking=True)
-            next_input = next_input.sub_(mean).div_(std)
+            next_input = next_input.float().sub_(mean).div_(std)
 
             if not first:
                 yield inputs, targets
@@ -334,8 +334,8 @@ class PrefetchedWrapperU(object):
         with torch.cuda.stream(stream):
             next_input_w = next_input_w.to(device, non_blocking=True)
             next_input_s = next_input_s.to(device, non_blocking=True)
-            next_input_w = next_input_w.sub_(mean).div_(std)
-            next_input_s = next_input_s.sub_(mean).div_(std)
+            next_input_w = next_input_w.float().sub_(mean).div_(std)
+            next_input_s = next_input_s.float().sub_(mean).div_(std)
 
             if not first:
                 yield input_w, input_s
