@@ -25,6 +25,8 @@ except ImportError:
         "Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
 
 from dataset.cifar import (PrefetchedWrapper,
+                           PrefetchedWrapperX,
+                           PrefetchedWrapperU,
                            get_cifar10, get_cifar100,
                            cifar10_mean, cifar10_std,
                            cifar100_mean, cifar100_std)
@@ -35,7 +37,7 @@ logger = logging.getLogger(__name__)
 DATASET_GETTERS = {'cifar10': get_cifar10,
                    'cifar100': get_cifar100}
 CIFAR_MOMENTS = {'cifar10': (cifar10_mean, cifar10_std),
-                 'cifar100': (cifar10_mean, cifar10_std)}
+                 'cifar100': (cifar100_mean, cifar100_std)}
 
 best_acc = 0
 
@@ -216,7 +218,7 @@ def main():
 
     mean, std = CIFAR_MOMENTS[args.dataset]
     train_sampler = RandomSampler if args.local_rank == -1 else DistributedSampler
-    labeled_trainloader = PrefetchedWrapper(
+    labeled_trainloader = PrefetchedWrapperX(
         DataLoader(labeled_dataset,
                    sampler=train_sampler(labeled_dataset),
                    batch_size=args.batch_size,
@@ -224,7 +226,7 @@ def main():
                    drop_last=True,
                    pin_memory=True), mean, std, args.device)
 
-    unlabeled_trainloader = PrefetchedWrapper(
+    unlabeled_trainloader = PrefetchedWrapperU(
         DataLoader(unlabeled_dataset,
                    sampler=train_sampler(unlabeled_dataset),
                    batch_size=args.batch_size,
@@ -363,8 +365,8 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
     losses_u = AverageMeter()
     end = time.time()
 
-    labeled_train_iter = iter(labeled_trainloader)
-    unlabeled_train_iter = iter(unlabeled_trainloader)
+    # labeled_train_iter = labeled_trainloader
+    # unlabeled_train_iter = iter(unlabeled_trainloader)
 
     model.train()
 
@@ -372,28 +374,17 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
     if not args.no_progress:
         p_bar = tqdm(p_bar,
                      disable=args.local_rank not in [-1, 0])
-
+    train_loader = zip(labeled_trainloader, unlabeled_trainloader)
     for batch_idx in p_bar:
-        try:
-            inputs_x, targets_x = labeled_train_iter.next()
-        except:
-            labeled_train_iter = iter(labeled_trainloader)
-            inputs_x, targets_x = labeled_train_iter.next()
-
-        try:
-            (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
-        except:
-            unlabeled_train_iter = iter(unlabeled_trainloader)
-            (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
-
-        data_time.update(time.time() - end)
-        batch_size = inputs_x.shape[0]
-        inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s))
-        logits = model(inputs)
-        logits_x = logits[:batch_size]
-        logits_u_w, logits_u_s = logits[batch_size:].chunk(2)
-        # targets_x = targets_x.to(args.device, non_blocking=True)
-        del logits
+        for (inputs_x, targets_x), (inputs_u_w, inputs_u_s) in train_loader:
+            data_time.update(time.time() - end)
+            batch_size = inputs_x.shape[0]
+            inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s))
+            logits = model(inputs)
+            logits_x = logits[:batch_size]
+            logits_u_w, logits_u_s = logits[batch_size:].chunk(2)
+            # targets_x = targets_x.to(args.device, non_blocking=True)
+            del logits
 
         Lx = F.cross_entropy(logits_x, targets_x, reduction='mean')
 

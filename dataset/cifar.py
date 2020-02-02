@@ -221,3 +221,111 @@ class PrefetchedWrapper(object):
                                                    self.mean,
                                                    self.std,
                                                    self.device)
+
+
+class PrefetchedWrapperX(object):
+    def prefetched_loader(loader, mean, std, device):
+        mean = torch.tensor(mean).to(device).view(1, 3, 1, 1)
+        std = torch.tensor(std).to(device).view(1, 3, 1, 1)
+
+        stream = torch.cuda.Stream()
+        first = True
+        loader_iter = iter(loader)
+
+        try:
+            next_input, next_target = loader_iter.next()
+        except:
+            loader_iter = iter(loader)
+            next_input, next_target = loader_iter.next()
+
+        with torch.cuda.stream(stream):
+            next_input = next_input.to(device, non_blocking=True)
+            next_target = next_target.to(device, non_blocking=True)
+            next_input = next_input.sub_(mean).div_(std)
+
+            if not first:
+                yield inputs, targets
+            else:
+                first = False
+
+            torch.cuda.current_stream().wait_stream(stream)
+            inputs = next_input
+            targets = next_target
+
+        yield inputs, targets
+
+    def __init__(self, dataloader, mean, std, device):
+        self.dataloader = dataloader
+        self.epoch = 0
+        self.mean = np.array(mean) * 255.0
+        self.std = np.array(std) * 255.0
+        self.device = device
+
+    def __len__(self):
+        return len(self.dataloader)
+
+    def __iter__(self):
+        if (self.dataloader.sampler is not None and
+            isinstance(self.dataloader.sampler,
+                       torch.utils.data.distributed.DistributedSampler)):
+
+            self.dataloader.sampler.set_epoch(self.epoch)
+        self.epoch += 1
+        return PrefetchedWrapper.prefetched_loader(self.dataloader,
+                                                   self.mean,
+                                                   self.std,
+                                                   self.device)
+
+
+class PrefetchedWrapperU(object):
+    def prefetched_loader(loader, mean, std, device):
+        mean = torch.tensor(mean).to(device).view(1, 3, 1, 1)
+        std = torch.tensor(std).to(device).view(1, 3, 1, 1)
+
+        stream = torch.cuda.Stream()
+        first = True
+        loader_iter = iter(loader)
+
+        try:
+            next_input_w, next_input_s, _ = loader_iter.next()
+        except:
+            loader_iter = iter(loader)
+            next_input_w, next_input_s, _ = loader_iter.next()
+
+        with torch.cuda.stream(stream):
+            next_input_w = next_input_w.to(device, non_blocking=True)
+            next_input_s = next_input_s.to(device, non_blocking=True)
+            next_input_w = next_input_w.sub_(mean).div_(std)
+            next_input_s = next_input_s.sub_(mean).div_(std)
+
+            if not first:
+                yield input_w, input_s
+            else:
+                first = False
+
+            torch.cuda.current_stream().wait_stream(stream)
+            input_w, input_s = next_input_w, next_input_s
+
+        yield input_w, input_s
+
+    def __init__(self, dataloader, mean, std, device):
+        self.dataloader = dataloader
+        self.epoch = 0
+        self.mean = np.array(mean) * 255.0
+        self.std = np.array(std) * 255.0
+        self.device = device
+
+    def __len__(self):
+        return len(self.dataloader)
+
+    def __iter__(self):
+        if (self.dataloader.sampler is not None and
+            isinstance(self.dataloader.sampler,
+                       torch.utils.data.distributed.DistributedSampler)):
+
+            self.dataloader.sampler.set_epoch(self.epoch)
+        self.epoch += 1
+        return PrefetchedWrapper.prefetched_loader(self.dataloader,
+                                                   self.mean,
+                                                   self.std,
+                                                   self.device)
