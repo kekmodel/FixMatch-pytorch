@@ -23,7 +23,7 @@ Train the model by 4000 labeled data of CIFAR-10 dataset:
 python train.py --dataset cifar10 --num-labeled 4000 --arch wideresnet --batch-size 64 --lr 0.03 --out cifar10@4000
 ```
 
-Train the model by 10000 labeled data of CIFAR-100 dataset using DistributedDataParallel:
+Train the model by 10000 labeled data of CIFAR-100 dataset by using DistributedDataParallel:
 ```
 python -m torch.distributed.launch --nproc_per_node 4 ./train_dist.py --dataset cifar100 --num-labeled 10000 --arch wideresnet --batch-size 16 --lr 0.03 --out cifar100@10000
 ```
