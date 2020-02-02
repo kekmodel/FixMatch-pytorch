@@ -149,7 +149,7 @@ class CifarResNeXt(nn.Module):
 
 
 def build_resnext(cardinality, depth, width, num_classes):
-    logger.info(f"| ResNeXt {depth+1}x{width}")
+    logger.info(f"Model: ResNeXt {depth+1}x{width}")
     return CifarResNeXt(cardinality=cardinality,
                         depth=depth,
                         base_width=width,

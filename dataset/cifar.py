@@ -44,9 +44,9 @@ def get_cifar10(root, num_labeled, num_classes):
 
     test_dataset = datasets.CIFAR10(
         root, train=False, transform=transform_val, download=False)
-
-    logger.info(f"#Labeled: {len(train_labeled_idxs)}"
-                f" #Unlabeled: {len(train_unlabeled_idxs)}")
+    logger.info("Dataset: CIFAR10")
+    logger.info(f"Labeled: {len(train_labeled_idxs)}"
+                f" Unlabeled: {len(train_unlabeled_idxs)}")
 
     return train_labeled_dataset, train_unlabeled_dataset, test_dataset
 
@@ -81,8 +81,9 @@ def get_cifar100(root, num_labeled, num_classes):
     test_dataset = datasets.CIFAR100(
         root, train=False, transform=transform_val, download=False)
 
-    logger.info(f"#Labeled: {len(train_labeled_idxs)}"
-                f" #Unlabeled: {len(train_unlabeled_idxs)}")
+    logger.info("Dataset: CIFAR100")
+    logger.info(f"Labeled: {len(train_labeled_idxs)}"
+                f" Unlabeled: {len(train_unlabeled_idxs)}")
 
     return train_labeled_dataset, train_unlabeled_dataset, test_dataset
 

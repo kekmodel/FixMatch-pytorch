@@ -345,6 +345,8 @@ def main():
 
 def train(args, labeled_trainloader, unlabeled_trainloader,
           model, optimizer, ema_model, scheduler, epoch):
+    if args.amp:
+        from apex import amp
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
