@@ -125,7 +125,6 @@ def main():
                         help="don't use prgress bar")
 
     args = parser.parse_args()
-    logger.info(dict(args._get_kwargs()))
     global best_acc
 
     def create_model(args):
@@ -182,7 +181,7 @@ def main():
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
         level=logging.INFO if args.local_rank in [-1, 0] else logging.WARN)
-
+    logger.info(dict(args._get_kwargs()))
     logger.warning(
         "Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s",
         args.local_rank,
@@ -381,7 +380,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
         logits = model(inputs)
         logits_x = logits[:batch_size]
         logits_u_w, logits_u_s = logits[batch_size:].chunk(2)
-        targets_x = targets_x.to(args.device)
+        targets_x = targets_x.to(args.device, non_blocking=True)
         del logits
 
         Lx = F.cross_entropy(logits_x, targets_x, reduction='mean')
