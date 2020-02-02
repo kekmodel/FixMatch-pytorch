@@ -207,6 +207,9 @@ class PrefetchedWrapper(object):
         self.std = np.array(std) * 255.0
         self.device = device
 
+    def __len__(self):
+        return len(self.dataloader)
+
     def __iter__(self):
         if (self.dataloader.sampler is not None and
             isinstance(self.dataloader.sampler,
