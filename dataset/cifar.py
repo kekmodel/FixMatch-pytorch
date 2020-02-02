@@ -115,7 +115,7 @@ def fast_collate(batch):
         flattened_batch_size = batch_size * inner_tuple_size
         targets = torch.zeros(flattened_batch_size, dtype=torch.int64)
         tensor = torch.zeros(
-            (flattened_batch_size, *batch[0][0][0].size), dtype=torch.uint8)
+            (flattened_batch_size, *batch[0][0][0].shape), dtype=torch.uint8)
         for i in range(batch_size):
             # all input tensor tuples must be same length
             assert len(batch[i][0]) == inner_tuple_size
@@ -127,7 +127,7 @@ def fast_collate(batch):
         targets = torch.tensor([b[1] for b in batch], dtype=torch.int64)
         assert len(targets) == batch_size
         tensor = torch.zeros(
-            (batch_size, *batch[0][0].size), dtype=torch.uint8)
+            (batch_size, *batch[0][0].shape), dtype=torch.uint8)
         for i in range(batch_size):
             tensor[i] += torch.from_numpy(batch[i][0])
         return tensor, targets
@@ -135,7 +135,7 @@ def fast_collate(batch):
         targets = torch.tensor([b[1] for b in batch], dtype=torch.int64)
         assert len(targets) == batch_size
         tensor = torch.zeros(
-            (batch_size, *batch[0][0].size), dtype=torch.uint8)
+            (batch_size, *batch[0][0].shape), dtype=torch.uint8)
         for i in range(batch_size):
             tensor[i].copy_(batch[i][0])
         return tensor, targets
@@ -178,7 +178,7 @@ class CIFAR10SSL(datasets.CIFAR10):
 
     def __getitem__(self, index):
         img, target = self.data[index], self.targets[index]
-        img = Image.fromarray(img)
+        # img = Image.fromarray(img)
 
         if self.transform is not None:
             img = self.transform(img)
@@ -203,7 +203,7 @@ class CIFAR100SSL(datasets.CIFAR100):
 
     def __getitem__(self, index):
         img, target = self.data[index], self.targets[index]
-        img = Image.fromarray(img)
+        # img = Image.fromarray(img)
 
         if self.transform is not None:
             img = self.transform(img)
@@ -216,8 +216,8 @@ class CIFAR100SSL(datasets.CIFAR100):
 
 class PrefetchedWrapper(object):
     def prefetched_loader(loader, mean, std, device):
-        mean = torch.tensor(mean).cuda().view(1, 3, 1, 1)
-        std = torch.tensor(std).cuda().view(1, 3, 1, 1)
+        mean = torch.tensor(mean).to(device).view(1, 3, 1, 1)
+        std = torch.tensor(std).to(device).view(1, 3, 1, 1)
 
         stream = torch.cuda.Stream()
         first = True
@@ -296,8 +296,8 @@ class PrefetchedWrapperX(object):
     def __init__(self, dataloader, mean, std, device):
         self.dataloader = dataloader
         self.epoch = 0
-        self.mean = np.array(mean) * 255.0
-        self.std = np.array(std) * 255.0
+        self.mean = [x * 255 for x in mean]
+        self.std = [x * 255 for x in std]
         self.device = device
 
     def __len__(self):
@@ -350,8 +350,8 @@ class PrefetchedWrapperU(object):
     def __init__(self, dataloader, mean, std, device):
         self.dataloader = dataloader
         self.epoch = 0
-        self.mean = np.array(mean) * 255.0
-        self.std = np.array(std) * 255.0
+        self.mean = [x * 255 for x in mean]
+        self.std = [x * 255 for x in std]
         self.device = device
 
     def __len__(self):
