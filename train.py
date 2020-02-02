@@ -379,7 +379,10 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
     #         unlabeled_train_iter = iter(unlabeled_trainloader)
     #         (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
     for batch_idx, data in enumerate(train_loader):
-        print(data)
+        print(len(data))
+        for i in range(len(data)):
+            print(data[i])
+            print(data[i].shape)
         exit()
         inputs_u_w, inputs_u_s = inputs_u
         data_time.update(time.time() - end)
