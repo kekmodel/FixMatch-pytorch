@@ -378,12 +378,9 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
     #     except:
     #         unlabeled_train_iter = iter(unlabeled_trainloader)
     #         (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
-    for batch_idx, data in enumerate(train_loader):
-        print(len(data))
-        for i in range(len(data)):
-            print(len(data[i]))
-        exit()
-        inputs_u_w, inputs_u_s = inputs_u
+    for batch_idx, (data_x, data_u) in enumerate(train_loader):
+        inputs_x, targets_x = data_x
+        (inputs_u_w, inputs_u_s), _ = data_u
         data_time.update(time.time() - end)
         batch_size = inputs_x.shape[0]
         inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s)).to(args.device)
