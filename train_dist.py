@@ -104,10 +104,12 @@ def main():
                         help='path to latest checkpoint (default: none)')
     parser.add_argument('--seed', type=int, default=-1,
                         help="random seed (-1: don't use random seed)")
+    parser.add_argument('--mu', default=7, type=int,
+                        help='coefficient of unlabeled batch size')
+    parser.add_argument('--lambda-u', default=1, type=float,
+                        help='coefficient of unlabeled loss')
     parser.add_argument('--threshold', default=0.95, type=float,
                         help='pseudo label threshold')
-    parser.add_argument('--mu', default=7, type=float,
-                        help='coefficient of unlabeled batch size')
     parser.add_argument('--use-ema', action='store_true', default=True,
                         help='use EMA model')
     parser.add_argument('--ema-decay', default=0.999, type=float,
@@ -389,7 +391,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
 
         Lu = (F.cross_entropy(logits_u_s, targets_u,
                               reduction='none') * mask).mean()
-        loss = Lx + Lu
+        loss = Lx + args.lambda_u * Lu
 
         if args.amp:
             with amp.scale_loss(loss, optimizer) as scaled_loss:
