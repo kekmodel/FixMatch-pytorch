@@ -242,8 +242,8 @@ class PrefetchedWrapper(object):
     def __init__(self, dataloader, mean, std, device):
         self.dataloader = dataloader
         self.epoch = 0
-        self.mean = np.array(mean) * 255.0
-        self.std = np.array(std) * 255.0
+        self.mean = [x * 255 for x in mean]
+        self.std = [x * 255 for x in std]
         self.device = device
 
     def __len__(self):
