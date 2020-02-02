@@ -378,7 +378,9 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
     #     except:
     #         unlabeled_train_iter = iter(unlabeled_trainloader)
     #         (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
-    for batch_idx, (inputs_x, targets_x), (inputs_u, _) in enumerate(train_loader):
+    for batch_idx, data in enumerate(train_loader):
+        print(data)
+        exit()
         inputs_u_w, inputs_u_s = inputs_u
         data_time.update(time.time() - end)
         batch_size = inputs_x.shape[0]
