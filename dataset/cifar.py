@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 cifar10_mean = (0.4914, 0.4822, 0.4465)
 cifar10_std = (0.2471, 0.2435, 0.2616)
 cifar100_mean = (0.5071, 0.4867, 0.4408)
-cifar100l_std = (0.2675, 0.2565, 0.2761)
+cifar100_std = (0.2675, 0.2565, 0.2761)
 normal_mean = (0.5, 0.5, 0.5)
 normal_std = (0.5, 0.5, 0.5)
 
@@ -24,11 +24,11 @@ def get_cifar10(root, num_labeled, num_expand_x, num_expand_u):
                               padding=int(32*0.125),
                               padding_mode='reflect'),
         transforms.ToTensor(),
-        # transforms.Normalize(mean=normal_mean, std=normal_std)
+        transforms.Normalize(mean=cifar10_mean, std=cifar10_std)
     ])
     transform_val = transforms.Compose([
         transforms.ToTensor(),
-        # transforms.Normalize(mean=normal_mean, std=normal_std)
+        transforms.Normalize(mean=cifar10_mean, std=cifar10_std)
     ])
     base_dataset = datasets.CIFAR10(
         root, train=True, download=True)
@@ -42,7 +42,7 @@ def get_cifar10(root, num_labeled, num_expand_x, num_expand_u):
 
     train_unlabeled_dataset = CIFAR10SSL(
         root, train_unlabeled_idxs, num_expand_u, train=True,
-        transform=TransformFix(mean=normal_mean, std=normal_std))
+        transform=TransformFix(mean=cifar10_mean, std=cifar10_std))
 
     test_dataset = datasets.CIFAR10(
         root, train=False, transform=transform_val, download=False)
@@ -61,11 +61,11 @@ def get_cifar100(root, num_labeled, num_expand_x, num_expand_u):
                               padding=int(32*0.125),
                               padding_mode='reflect'),
         transforms.ToTensor(),
-        # transforms.Normalize(mean=normal_mean, std=normal_std)
+        transforms.Normalize(mean=normal_mean, std=normal_std)
     ])
     transform_val = transforms.Compose([
         transforms.ToTensor(),
-        # transforms.Normalize(mean=normal_mean, std=normal_std)
+        transforms.Normalize(mean=normal_mean, std=normal_std)
     ])
     base_dataset = datasets.CIFAR100(
         root, train=True, download=True)
@@ -117,7 +117,7 @@ class TransformFix(object):
         self.strong = randaugment.RandAugCutout(n=2, m=10)
         self.normalize = transforms.Compose([
             transforms.ToTensor(),
-            # transforms.Normalize(mean=mean, std=std)
+            transforms.Normalize(mean=mean, std=std)
         ])
 
     def __call__(self, x):
