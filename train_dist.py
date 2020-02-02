@@ -406,10 +406,10 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
 
         optimizer.step()
         scheduler.step()
-        torch.cuda.synchronize()
         if ema_model is not None:
             ema_model.update(model)
         model.zero_grad()
+        torch.cuda.synchronize()
 
         batch_time.update(time.time() - end)
         end = time.time()
