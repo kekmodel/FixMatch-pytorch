@@ -101,8 +101,8 @@ def x_u_split(labels, num_labeled, num_classes):
         np.random.shuffle(idx)
         labeled_idx.extend(idx[:label_per_class])
         unlabeled_idx.extend(idx[label_per_class:])
-    # np.random.shuffle(labeled_idx)
-    # np.random.shuffle(unlabeled_idx)
+    np.random.shuffle(labeled_idx)
+    np.random.shuffle(unlabeled_idx)
     return labeled_idx, unlabeled_idx
 
 
