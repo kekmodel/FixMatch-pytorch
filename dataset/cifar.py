@@ -33,15 +33,15 @@ def get_cifar10(root, num_labeled, num_expand_x, num_expand_u):
     base_dataset = datasets.CIFAR10(
         root, train=True, download=True)
 
-    train_labeled_idxs, train_unlabeled_idxs = x_u_split(
-        base_dataset.targets, num_labeled, num_classes=10)
+    train_labeled_idxs, train_unlabeled_idxs = test_x_u_split(
+        base_dataset.targets, num_labeled, num_classes=10, num_expand_x, num_expand_u)
 
     train_labeled_dataset = CIFAR10SSL(
-        root, train_labeled_idxs, num_expand_x, train=True,
+        root, train_labeled_idxs, None, train=True,
         transform=transform_labeled)
 
     train_unlabeled_dataset = CIFAR10SSL(
-        root, train_unlabeled_idxs, num_expand_u, train=True,
+        root, train_unlabeled_idxs, None, train=True,
         transform=TransformFix(mean=cifar10_mean, std=cifar10_std))
 
     test_dataset = datasets.CIFAR10(
@@ -61,12 +61,12 @@ def get_cifar100(root, num_labeled, num_expand_x, num_expand_u):
                               padding=int(32*0.125),
                               padding_mode='reflect'),
         transforms.ToTensor(),
-        transforms.Normalize(mean=cifar100_mean, std=cifar100_std)
-    ])
+        transforms.Normalize(mean=cifar100_mean, std=cifar100_std)])
+
     transform_val = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean=cifar100_mean, std=cifar100_std)
-    ])
+        transforms.Normalize(mean=cifar100_mean, std=cifar100_std)])
+
     base_dataset = datasets.CIFAR100(
         root, train=True, download=True)
 
@@ -106,19 +106,49 @@ def x_u_split(labels, num_labeled, num_classes):
     return labeled_idx, unlabeled_idx
 
 
+def test_x_u_split(labels,
+                   num_labeled, num_classes,
+                   num_expand_x, num_expand_u):
+    label_per_class = num_labeled // num_classes
+    expand_labeled = num_expand_x // num_classes
+    expand_unlabeled = num_expand_u // num_classes
+    labels = np.array(labels)
+    labeled_idx = []
+    unlabeled_idx = []
+    for i in range(num_classes):
+        idx = np.where(labels == i)[0]
+        np.random.shuffle(idx)
+        labeled_idx.extend(
+            np.random.choice(idx[:label_per_class], expand_labeled))
+        unlabeled_idx.extend(
+            np.random.choice(idx[label_per_class:], expand_unlabeled))
+
+    if len(labeled_idx) < num_expand_x:
+        diff = num_expand_x - len(labeled_idx)
+        labeled_idx.extend(
+            np.random.choice(labeled_idx, diff))
+
+    if len(unlabeled_idx) < num_expand_u:
+        diff = num_expand_u - len(unlabeled_idx)
+        unlabeled_idx.extend(
+            np.random.choice(unlabeled_idx, diff))
+
+    np.random.shuffle(labeled_idx)
+    np.random.shuffle(unlabeled_idx)
+    return labeled_idx, unlabeled_idx
+
+
 class TransformFix(object):
     def __init__(self, mean, std):
         self.weak = transforms.Compose([
             transforms.RandomHorizontalFlip(),
             transforms.RandomCrop(size=32,
                                   padding=int(32*0.125),
-                                  padding_mode='reflect')
-        ])
+                                  padding_mode='reflect')])
         self.strong = randaugment.RandAugCutout(n=2, m=10)
         self.normalize = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std)
-        ])
+            transforms.Normalize(mean=mean, std=std)])
 
     def __call__(self, x):
         weak = self.weak(x)
@@ -135,7 +165,8 @@ class CIFAR10SSL(datasets.CIFAR10):
                          target_transform=target_transform,
                          download=download)
         if indexs is not None:
-            indexs = np.random.choice(indexs, num_expand)
+            if num_expand is not None:
+                indexs = np.random.choice(indexs, num_expand)
             self.data = self.data[indexs]
             self.targets = np.array(self.targets)[indexs]
 
@@ -161,7 +192,8 @@ class CIFAR100SSL(datasets.CIFAR100):
                          target_transform=target_transform,
                          download=download)
         if indexs is not None:
-            indexs = np.random.choice(indexs, num_expand)
+            if num_expand is not None:
+                indexs = np.random.choice(indexs, num_expand)
             self.data = self.data[indexs]
             self.targets = np.array(self.targets)[indexs]
 
