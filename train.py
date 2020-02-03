@@ -229,28 +229,30 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers)
 
-    # no_decay = ["bias", "bn"]
-    # grouped_parameters = [
-    #     {
-    #         "params": [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
-    #         "weight_decay": args.wdecay * 2,  # L2 regulization
-    #     },
-    #     {
-    #         "params": [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)],
-    #         "weight_decay": 0.0
-    #     }]
-    optimizer = optim.SGD(model.parameters(), lr=args.lr,
+    no_decay = ['bn']
+    grouped_parameters = [
+        {
+            'params': [p for n, p in model.named_parameters()
+                       if not any(nd in n for nd in no_decay)],
+            'weight_decay': args.wdecay * 2,  # L2 regulization
+        },
+        {
+            'params': [p for n, p in model.named_parameters()
+                       if any(nd in n for nd in no_decay)],
+            'weight_decay': 0.0
+        }]
+    optimizer = optim.SGD(grouped_parameters, lr=args.lr,
                           momentum=0.9,
                           nesterov=args.nesterov)
 
     args.iteration = int(args.k_img / args.batch_size)
     args.total_steps = args.epochs * args.iteration
     scheduler = get_cosine_schedule_with_warmup(
-        optimizer, args.warmup * len(unlabeled_trainloader), args.total_steps)
+        optimizer, args.warmup * args.iteration, args.total_steps)
 
     ema_model = None
     if args.use_ema:
-        ema_model = ModelEMA(args, model, args.ema_decay, device)
+        ema_model = ModelEMA(model, args.ema_decay, device)
 
     start_epoch = 0
 
@@ -382,7 +384,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
         Lu = (F.cross_entropy(logits_u_s, targets_u,
                               reduction='none') * mask).mean()
         # L2 Regulization
-        # no_decay = ['bn', 'bias']
+        # no_decay = ['bn']
         # wd = torch.zeros(1, dtype=torch.float32,
         #                  device=args.device, requires_grad=True)
         # for n, p in model.named_parameters():
@@ -476,12 +478,11 @@ def test(args, test_loader, model, epoch):
 
 
 class ModelEMA(object):
-    def __init__(self, args, model, decay, device='', resume=''):
+    def __init__(self, model, decay, device='', resume=''):
         self.ema = deepcopy(model)
         self.ema.eval()
         self.decay = decay
         self.device = device
-        self.wd = args.lr * args.wdecay * 2.
         if device:
             self.ema.to(device=device)
         self.ema_has_module = hasattr(self.ema, 'module')
@@ -514,8 +515,6 @@ class ModelEMA(object):
                 if self.device:
                     model_v = model_v.to(device=self.device)
                 ema_v.copy_(ema_v * self.decay + (1. - self.decay) * model_v)
-                # if not any(nd in k for nd in ['bn', 'bias']):
-                msd[k] = msd[k] * (1. - self.wd)
 
 
 if __name__ == '__main__':
