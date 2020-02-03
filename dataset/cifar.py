@@ -135,7 +135,7 @@ class CIFAR10SSL(datasets.CIFAR10):
                          target_transform=target_transform,
                          download=download)
         if indexs is not None:
-            indexs = np.random.choice(len(indexs), num_expand)
+            indexs = np.random.choice(indexs, num_expand)
             self.data = self.data[indexs]
             self.targets = np.array(self.targets)[indexs]
 
@@ -161,7 +161,7 @@ class CIFAR100SSL(datasets.CIFAR100):
                          target_transform=target_transform,
                          download=download)
         if indexs is not None:
-            indexs = np.random.choice(len(indexs), num_expand)
+            indexs = np.random.choice(indexs, num_expand)
             self.data = self.data[indexs]
             self.targets = np.array(self.targets)[indexs]
 
