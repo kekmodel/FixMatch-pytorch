@@ -119,9 +119,9 @@ def test_x_u_split(labels,
         idx = np.where(labels == i)[0]
         np.random.shuffle(idx)
         labeled_idx.extend(
-            np.random.choice(idx[:label_per_class], expand_labeled))
+            np.repeat(idx[:label_per_class], expand_labeled))
         unlabeled_idx.extend(
-            np.random.choice(idx[label_per_class:], expand_unlabeled))
+            np.repeat(idx[label_per_class:], expand_unlabeled))
 
     if len(labeled_idx) < num_expand_x:
         diff = num_expand_x - len(labeled_idx)
