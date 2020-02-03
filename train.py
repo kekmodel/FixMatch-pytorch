@@ -207,7 +207,8 @@ def main():
 
     model.to(args.device)
 
-    train_sampler = RandomSampler if args.local_rank == -1 else DistributedSampler
+    # train_sampler = RandomSampler if args.local_rank == -1 else DistributedSampler
+    train_sampler = SequentialSampler if args.local_rank == -1 else DistributedSampler
     labeled_trainloader = DataLoader(
         labeled_dataset,
         sampler=train_sampler(labeled_dataset),
