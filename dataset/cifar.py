@@ -108,6 +108,13 @@ def x_u_split(labels,
         labeled_idx.extend(idx[:label_per_class])
         unlabeled_idx.extend(idx[label_per_class:])
 
+    exapand_labeled = num_expand_x // len(labeled_idx)
+    exapand_unlabeled = num_expand_u // len(unlabeled_idx)
+    labeled_idx = np.hstack(
+        [np.random.shuffle(labeled_idx) for _ in range(exapand_labeled)])
+    unlabeled_idx = np.hstack(
+        [np.random.shffle(unlabeled_idx) for _ in range(exapand_unlabeled)])
+
     if len(labeled_idx) < num_expand_x:
         diff = num_expand_x - len(labeled_idx)
         labeled_idx.extend(
@@ -121,15 +128,6 @@ def x_u_split(labels,
             np.random.choice(unlabeled_idx, diff))
     else:
         assert len(unlabeled_idx) == num_expand_u
-
-    np.random.shuffle(labeled_idx)
-    np.random.shuffle(unlabeled_idx)
-    exapand_labeled = num_expand_x // len(labeled_idx)
-    exapand_unlabeled = num_expand_u // len(unlabeled_idx)
-    labeled_idx = np.hstack(
-        [labeled_idx for _ in range(exapand_labeled)])
-    unlabeled_idx = np.hstack(
-        [unlabeled_idx for _ in range(exapand_unlabeled)])
     return labeled_idx, unlabeled_idx
 
 
