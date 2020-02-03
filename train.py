@@ -239,7 +239,7 @@ def main():
         {
             'params': [p for n, p in model.named_parameters()
                        if any(nd in n for nd in no_decay)],
-            'weight_decay': 0.0
+            'weight_decay': 0.0,
         }]
     optimizer = optim.SGD(grouped_parameters, lr=args.lr,
                           momentum=0.9,
