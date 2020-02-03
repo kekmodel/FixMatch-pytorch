@@ -370,15 +370,15 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
         data_time.update(time.time() - end)
         batch_size = inputs_x.shape[0]
         inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s)).to(args.device)
+        targets_x = targets_x.to(args.device)
         logits = model(inputs)
         logits_x = logits[:batch_size]
         logits_u_w, logits_u_s = logits[batch_size:].chunk(2)
-        targets_x = targets_x.to(args.device)
         del logits
 
         Lx = F.cross_entropy(logits_x, targets_x, reduction='mean')
 
-        pseudo_label = torch.softmax(logits_u_w.detach_(), dim=-1)
+        pseudo_label = torch.softmax(logits_u_w, dim=-1).detach()
         max_probs, targets_u = torch.max(pseudo_label, dim=-1)
         mask = max_probs.ge(args.threshold).float()
 
