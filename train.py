@@ -454,7 +454,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
                 loss_x=losses_x.avg,
                 loss_u=losses_u.avg,
                 mask=mask_prob))
-            p_bar.update()
+            # p_bar.update()
 
     if not args.no_progress:
         p_bar.close()
