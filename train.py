@@ -229,7 +229,7 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers)
 
-    no_decay = ["bias", "bn"]
+    no_decay = ["bn"]
     grouped_parameters = [
         {
             "params": [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
@@ -378,7 +378,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
 
         Lx = F.cross_entropy(logits_x, targets_x, reduction='mean')
 
-        pseudo_label = torch.softmax(logits_u_w.detach_(), dim=-1)
+        pseudo_label = torch.softmax(logits_u_w, dim=-1).detach()
         max_probs, targets_u = torch.max(pseudo_label, dim=-1)
         mask = max_probs.ge(args.threshold).float()
 
