@@ -229,6 +229,16 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers)
 
+    # no_decay = ["bias", "bn"]
+    # grouped_parameters = [
+    #     {
+    #         "params": [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
+    #         "weight_decay": args.wdecay * 2,  # L2 regulization
+    #     },
+    #     {
+    #         "params": [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)],
+    #         "weight_decay": 0.0
+    #     }]
     optimizer = optim.SGD(model.parameters(), lr=args.lr,
                           momentum=0.9,
                           nesterov=args.nesterov)
@@ -240,7 +250,7 @@ def main():
 
     ema_model = None
     if args.use_ema:
-        ema_model = ModelEMA(model, args.ema_decay, device)
+        ema_model = ModelEMA(args, model, args.ema_decay, device)
 
     start_epoch = 0
 
@@ -345,28 +355,23 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
     losses_u = AverageMeter()
     end = time.time()
 
-    p_bar = range(args.iteration)
+    # p_bar = range(args.iteration)
+    # if not args.no_progress:
+    #     p_bar = tqdm(p_bar,
+    #                  disable=args.local_rank not in [-1, 0])
+
+    # labeled_train_iter = iter(labeled_trainloader)
+    # unlabeled_train_iter = iter(unlabeled_trainloader)
+
     if not args.no_progress:
-        p_bar = tqdm(p_bar,
+        p_bar = tqdm(range(args.iteration),
                      disable=args.local_rank not in [-1, 0])
 
-    labeled_train_iter = iter(labeled_trainloader)
-    unlabeled_train_iter = iter(unlabeled_trainloader)
-
+    train_loader = zip(labeled_trainloader, unlabeled_trainloader)
     model.train()
-    for batch_idx in p_bar:
-        try:
-            inputs_x, targets_x = labeled_train_iter.next()
-        except:
-            labeled_train_iter = iter(labeled_trainloader)
-            inputs_x, targets_x = labeled_train_iter.next()
-
-        try:
-            (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
-        except:
-            unlabeled_train_iter = iter(unlabeled_trainloader)
-            (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
-
+    for batch_idx, (data_x, data_u) in enumerate(train_loader):
+        inputs_x, targets_x = data_x
+        (inputs_u_w, inputs_u_s), _ = data_u
         data_time.update(time.time() - end)
         batch_size = inputs_x.shape[0]
         inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s)).to(args.device)
@@ -385,15 +390,15 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
         Lu = (F.cross_entropy(logits_u_s, targets_u,
                               reduction='none') * mask).mean()
         # L2 Regulization
-        no_decay = ['bn', 'bias']
-        wd = torch.zeros(1, dtype=torch.float32,
-                         device=args.device, requires_grad=True)
-        for n, p in model.named_parameters():
-            if not any(nd in n for nd in no_decay):
-                wd = wd + (p**2).sum() / 2.
+        # no_decay = ['bn', 'bias']
+        # wd = torch.zeros(1, dtype=torch.float32,
+        #                  device=args.device, requires_grad=True)
+        # for n, p in model.named_parameters():
+        #     if not any(nd in n for nd in no_decay):
+        #         wd = wd + (p**2).sum() / 2.
 
-        loss = Lx + args.lambda_u * Lu + args.wdecay * wd
-
+        # loss = Lx + args.lambda_u * Lu + args.wdecay * wd
+        loss = Lx + args.lambda_u * Lu
         if args.amp:
             with amp.scale_loss(loss, optimizer) as scaled_loss:
                 scaled_loss.backward()
@@ -480,11 +485,12 @@ def test(args, test_loader, model, epoch):
 
 
 class ModelEMA(object):
-    def __init__(self, model, decay, device='', resume=''):
+    def __init__(self, args, model, decay, device='', resume=''):
         self.ema = deepcopy(model)
         self.ema.eval()
         self.decay = decay
         self.device = device
+        self.wd = args.lr * args.wdecay * 2.
         if device:
             self.ema.to(device=device)
         self.ema_has_module = hasattr(self.ema, 'module')
@@ -517,6 +523,8 @@ class ModelEMA(object):
                 if self.device:
                     model_v = model_v.to(device=self.device)
                 ema_v.copy_(ema_v * self.decay + (1. - self.decay) * model_v)
+                if not any(nd in k for nd in ['bn', 'bias']):
+                    msd[k] = msd[k] * (1. - self.wd)
 
 
 if __name__ == '__main__':
