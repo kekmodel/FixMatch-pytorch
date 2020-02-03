@@ -355,23 +355,28 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
     losses_u = AverageMeter()
     end = time.time()
 
-    # p_bar = range(args.iteration)
-    # if not args.no_progress:
-    #     p_bar = tqdm(p_bar,
-    #                  disable=args.local_rank not in [-1, 0])
-
-    # labeled_train_iter = iter(labeled_trainloader)
-    # unlabeled_train_iter = iter(unlabeled_trainloader)
-
+    p_bar = range(args.iteration)
     if not args.no_progress:
-        p_bar = tqdm(range(args.iteration),
+        p_bar = tqdm(p_bar,
                      disable=args.local_rank not in [-1, 0])
 
-    train_loader = zip(labeled_trainloader, unlabeled_trainloader)
+    labeled_train_iter = iter(labeled_trainloader)
+    unlabeled_train_iter = iter(unlabeled_trainloader)
+
     model.train()
-    for batch_idx, (data_x, data_u) in enumerate(train_loader):
-        inputs_x, targets_x = data_x
-        (inputs_u_w, inputs_u_s), _ = data_u
+    for batch_idx in p_bar:
+        try:
+            inputs_x, targets_x = labeled_train_iter.next()
+        except:
+            labeled_train_iter = iter(labeled_trainloader)
+            inputs_x, targets_x = labeled_train_iter.next()
+
+        try:
+            (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
+        except:
+            unlabeled_train_iter = iter(unlabeled_trainloader)
+            (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
+
         data_time.update(time.time() - end)
         batch_size = inputs_x.shape[0]
         inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s)).to(args.device)
@@ -380,6 +385,24 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
         logits_x = logits[:batch_size]
         logits_u_w, logits_u_s = logits[batch_size:].chunk(2)
         del logits
+
+    # if not args.no_progress:
+    #     p_bar = tqdm(range(args.iteration),
+    #                  disable=args.local_rank not in [-1, 0])
+
+    # train_loader = zip(labeled_trainloader, unlabeled_trainloader)
+    # model.train()
+    # for batch_idx, (data_x, data_u) in enumerate(train_loader):
+    #     inputs_x, targets_x = data_x
+    #     (inputs_u_w, inputs_u_s), _ = data_u
+    #     data_time.update(time.time() - end)
+    #     batch_size = inputs_x.shape[0]
+    #     inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s)).to(args.device)
+    #     targets_x = targets_x.to(args.device)
+    #     logits = model(inputs)
+    #     logits_x = logits[:batch_size]
+    #     logits_u_w, logits_u_s = logits[batch_size:].chunk(2)
+    #     del logits
 
         Lx = F.cross_entropy(logits_x, targets_x, reduction='mean')
 
