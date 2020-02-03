@@ -117,15 +117,15 @@ def x_u_split(labels,
 
     if len(labeled_idx) < num_expand_x:
         diff = num_expand_x - len(labeled_idx)
-        labeled_idx.extend(
-            np.random.choice(labeled_idx, diff))
+        labeled_idx = np.hstack(
+            (labeled_idx, np.random.choice(labeled_idx, diff)))
     else:
         assert len(labeled_idx) == num_expand_x
 
     if len(unlabeled_idx) < num_expand_u:
         diff = num_expand_u - len(unlabeled_idx)
-        unlabeled_idx.extend(
-            np.random.choice(unlabeled_idx, diff))
+        unlabeled_idx = np.hstack(
+            (unlabeled_idx, np.random.choice(unlabeled_idx, diff)))
     else:
         assert len(unlabeled_idx) == num_expand_u
     return labeled_idx, unlabeled_idx
