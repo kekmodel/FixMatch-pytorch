@@ -30,12 +30,10 @@ def get_cifar10(root, num_labeled, num_expand_x, num_expand_u):
         transforms.ToTensor(),
         transforms.Normalize(mean=cifar10_mean, std=cifar10_std)
     ])
-    base_dataset = datasets.CIFAR10(
-        root, train=True, download=True)
+    base_dataset = datasets.CIFAR10(root, train=True, download=True)
 
     train_labeled_idxs, train_unlabeled_idxs = x_u_split(
-        base_dataset.targets, num_labeled,
-        num_expand_x, num_expand_u, num_classes=10)
+        base_dataset.targets, num_labeled, num_classes=10)
 
     train_labeled_dataset = CIFAR10SSL(
         root, train_labeled_idxs, train=True,
@@ -72,8 +70,7 @@ def get_cifar100(root, num_labeled, num_expand_x, num_expand_u):
         root, train=True, download=True)
 
     train_labeled_idxs, train_unlabeled_idxs = x_u_split(
-        base_dataset.targets, num_labeled,
-        num_expand_x, num_expand_u, num_classes=100)
+        base_dataset.targets, num_labeled, num_classes=100)
 
     train_labeled_dataset = CIFAR100SSL(
         root, train_labeled_idxs, train=True,
