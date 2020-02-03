@@ -338,8 +338,8 @@ def main():
 
         test_accs.append(test_acc)
         logger.info('Best top-1 acc: {:.2f}'.format(best_acc))
-        logger.info('Median top-1 acc: {:.2f}\n'.format(
-            np.median(test_accs[-20:])))
+        logger.info('Mean top-1 acc: {:.2f}\n'.format(
+            np.mean(test_accs[-20:])))
 
     if args.local_rank in [-1, 0]:
         writer.close()
