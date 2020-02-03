@@ -207,7 +207,7 @@ def main():
 
     model.to(args.device)
 
-    train_sampler = SequentialSampler if args.local_rank == -1 else DistributedSampler
+    train_sampler = RandomSampler if args.local_rank == -1 else DistributedSampler
 
     labeled_trainloader = DataLoader(
         labeled_dataset,
@@ -229,15 +229,15 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers)
 
-    no_decay = ["bn"]
+    no_decay = ['bn', 'bias']
     grouped_parameters = [
         {
-            "params": [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
-            "weight_decay": args.wdecay * 2,  # L2 regulization
+            'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
+            'weight_decay': args.wdecay * 2,  # L2 regulization
         },
         {
-            "params": [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)],
-            "weight_decay": 0.0
+            'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)],
+            'weight_decay': 0.0
         }]
 
     optimizer = optim.SGD(grouped_parameters, lr=args.lr,
@@ -259,9 +259,9 @@ def main():
         torch.distributed.barrier()
 
     if args.resume:
-        logger.info('==> Resuming from checkpoint..')
+        logger.info("==> Resuming from checkpoint..")
         assert os.path.isfile(
-            args.resume), 'Error: no checkpoint directory found!'
+            args.resume), "Error: no checkpoint directory found!"
         args.out = os.path.dirname(args.resume)
         checkpoint = torch.load(args.resume)
         best_acc = checkpoint['best_acc']
@@ -301,7 +301,7 @@ def main():
             model, optimizer, ema_model, scheduler, epoch)
 
         if args.no_progress:
-            logger.info('Epoch {}. train_loss: {:.4f}. train_loss_x: {:.4f}. train_loss_u: {:.4f}.'
+            logger.info("Epoch {}. train_loss: {:.4f}. train_loss_x: {:.4f}. train_loss_u: {:.4f}."
                         .format(epoch+1, train_loss, train_loss_x, train_loss_u))
 
         if args.use_ema:
@@ -396,17 +396,17 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
         losses_x.update(Lx.item())
         losses_u.update(Lu.item())
 
-        optimizer.step()
-        scheduler.step()
         if ema_model is not None:
             ema_model.update(model)
+        optimizer.step()
+        scheduler.step()
         model.zero_grad()
 
         batch_time.update(time.time() - end)
         end = time.time()
         mask_prob = mask.mean().item()
         if not args.no_progress:
-            p_bar.set_description('Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.6f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. Mask: {mask:.4f}. '.format(
+            p_bar.set_description("Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.6f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. Mask: {mask:.4f}. ".format(
                 epoch=epoch + 1,
                 epochs=args.epochs,
                 batch=batch_idx + 1,
@@ -451,11 +451,10 @@ def test(args, test_loader, model, epoch):
             losses.update(loss.item(), inputs.shape[0])
             top1.update(prec1.item(), inputs.shape[0])
             top5.update(prec5.item(), inputs.shape[0])
-
             batch_time.update(time.time() - end)
             end = time.time()
             if not args.no_progress:
-                test_loader.set_description('Test Iter: {batch:4}/{iter:4}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. top1: {top1:.2f}. top5: {top5:.2f}. '.format(
+                test_loader.set_description("Test Iter: {batch:4}/{iter:4}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. top1: {top1:.2f}. top5: {top5:.2f}. ".format(
                     batch=batch_idx + 1,
                     iter=len(test_loader),
                     data=data_time.avg,
@@ -469,7 +468,7 @@ def test(args, test_loader, model, epoch):
 
     logger.info("top-1 acc: {:.2f}".format(top1.avg))
     logger.info("top-5 acc: {:.2f}".format(top5.avg))
-    return (losses.avg, top1.avg)
+    return losses.avg, top1.avg
 
 
 class ModelEMA(object):
