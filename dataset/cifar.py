@@ -113,7 +113,7 @@ def x_u_split(labels,
     labeled_idx = np.hstack(
         [np.random.shuffle(labeled_idx) for _ in range(exapand_labeled)])
     unlabeled_idx = np.hstack(
-        [np.random.shffle(unlabeled_idx) for _ in range(exapand_unlabeled)])
+        [np.random.shuffle(unlabeled_idx) for _ in range(exapand_unlabeled)])
 
     if len(labeled_idx) < num_expand_x:
         diff = num_expand_x - len(labeled_idx)
