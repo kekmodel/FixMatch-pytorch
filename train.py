@@ -229,7 +229,7 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers)
 
-    no_decay = ['bn', 'bias']
+    no_decay = ['bn']
     grouped_parameters = [
         {
             'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
@@ -356,17 +356,28 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
     losses_u = AverageMeter()
     end = time.time()
 
-    model.train()
-
-    train_loader = zip(labeled_trainloader, unlabeled_trainloader)
-
+    p_bar = range(args.iteration)
     if not args.no_progress:
-        p_bar = tqdm(range(args.iteration),
+        p_bar = tqdm(p_bar,
                      disable=args.local_rank not in [-1, 0])
 
-    for batch_idx, (data_x, data_u) in enumerate(train_loader):
-        inputs_x, targets_x = data_x
-        (inputs_u_w, inputs_u_s), _ = data_u
+    labeled_train_iter = iter(labeled_trainloader)
+    unlabeled_train_iter = iter(unlabeled_trainloader)
+
+    model.train()
+    for batch_idx in p_bar:
+        try:
+            inputs_x, targets_x = labeled_train_iter.next()
+        except:
+            labeled_train_iter = iter(labeled_trainloader)
+            inputs_x, targets_x = labeled_train_iter.next()
+
+        try:
+            (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
+        except:
+            unlabeled_train_iter = iter(unlabeled_trainloader)
+            (inputs_u_w, inputs_u_s), _ = unlabeled_train_iter.next()
+
         data_time.update(time.time() - end)
         batch_size = inputs_x.shape[0]
         inputs = torch.cat((inputs_x, inputs_u_w, inputs_u_s)).to(args.device)
@@ -396,10 +407,10 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
         losses_x.update(Lx.item())
         losses_u.update(Lu.item())
 
-        if ema_model is not None:
-            ema_model.update(model)
         optimizer.step()
         scheduler.step()
+        if ema_model is not None:
+            ema_model.update(model)
         model.zero_grad()
 
         batch_time.update(time.time() - end)

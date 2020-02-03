@@ -93,11 +93,7 @@ def get_cifar100(root, num_labeled, num_expand_x, num_expand_u):
     return train_labeled_dataset, train_unlabeled_dataset, test_dataset
 
 
-def x_u_split(labels,
-              num_labeled,
-              num_expand_x,
-              num_expand_u,
-              num_classes):
+def x_u_split(labels, num_labeled, num_classes):
     label_per_class = num_labeled // num_classes
     labels = np.array(labels)
     labeled_idx = []
@@ -107,29 +103,8 @@ def x_u_split(labels,
         np.random.shuffle(idx)
         labeled_idx.extend(idx[:label_per_class])
         unlabeled_idx.extend(idx[label_per_class:])
-
-    exapand_labeled = num_expand_x // len(labeled_idx)
-    exapand_unlabeled = num_expand_u // len(unlabeled_idx)
-    labeled_idx = np.hstack(
-        [np.random.choice(labeled_idx, len(labeled_idx), replace=False)
-         for _ in range(exapand_labeled)])
-    unlabeled_idx = np.hstack(
-        [np.random.choice(unlabeled_idx, len(unlabeled_idx), replace=False)
-         for _ in range(exapand_unlabeled)])
-
-    if len(labeled_idx) < num_expand_x:
-        diff = num_expand_x - len(labeled_idx)
-        labeled_idx = np.hstack(
-            (labeled_idx, np.random.choice(labeled_idx, diff)))
-    else:
-        assert len(labeled_idx) == num_expand_x
-
-    if len(unlabeled_idx) < num_expand_u:
-        diff = num_expand_u - len(unlabeled_idx)
-        unlabeled_idx = np.hstack(
-            (unlabeled_idx, np.random.choice(unlabeled_idx, diff)))
-    else:
-        assert len(unlabeled_idx) == num_expand_u
+    np.random.shuffle(labeled_idx)
+    np.random.shuffle(unlabeled_idx)
     return labeled_idx, unlabeled_idx
 
 
