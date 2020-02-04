@@ -229,21 +229,8 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers)
 
-    no_decay = ['bn']
-    grouped_parameters = [
-        {
-            'params': [p for n, p in model.named_parameters()
-                       if not any(nd in n for nd in no_decay)],
-            'weight_decay': args.wdecay * 2,  # L2 regulization
-        },
-        {
-            'params': [p for n, p in model.named_parameters()
-                       if any(nd in n for nd in no_decay)],
-            'weight_decay': 0.0,
-        }]
-    optimizer = optim.SGD(grouped_parameters, lr=args.lr,
-                          momentum=0.9,
-                          nesterov=args.nesterov)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr,
+                          momentum=0.9, nesterov=args.nesterov)
 
     args.iteration = int(args.k_img / args.batch_size)
     args.total_steps = args.epochs * args.iteration
@@ -384,15 +371,14 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
         Lu = (F.cross_entropy(logits_u_s, targets_u,
                               reduction='none') * mask).mean()
         # L2 Regulization
-        # no_decay = ['bn']
-        # wd = torch.zeros(1, dtype=torch.float32,
-        #                  device=args.device, requires_grad=True)
-        # for n, p in model.named_parameters():
-        #     if not any(nd in n for nd in no_decay):
-        #         wd = wd + (p**2).sum() / 2.
+        wd = torch.zeros(1, dtype=torch.float32,
+                         device=args.device, requires_grad=True)
+        for n, p in model.named_parameters():
+            if 'bn' not in n:
+                wd = wd + (p**2).sum() / 2.
 
-        # loss = Lx + args.lambda_u * Lu + args.wdecay * wd
-        loss = Lx + args.lambda_u * Lu
+        loss = Lx + args.lambda_u * Lu + args.wdecay * wd
+
         if args.amp:
             with amp.scale_loss(loss, optimizer) as scaled_loss:
                 scaled_loss.backward()
