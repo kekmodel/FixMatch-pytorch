@@ -229,8 +229,9 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers)
 
-    optimizer = optim.SGD(model.parameters(), lr=args.lr,
-                          momentum=0.9, nesterov=args.nesterov)
+    # optimizer = optim.SGD(model.parameters(), lr=args.lr,
+    #                       momentum=0.9, nesterov=args.nesterov)
+    optimizer = optim.AdamW(model.parameters(), lr=args.lr)
 
     args.iteration = int(args.k_img / args.batch_size)
     args.total_steps = args.epochs * args.iteration
