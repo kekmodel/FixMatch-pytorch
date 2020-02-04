@@ -13,6 +13,7 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.nn.utils import clip_grad_norm_
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
@@ -134,19 +135,19 @@ def main():
                                          width=args.model_width,
                                          num_classes=args.num_classes)
 
-        logger.info('Total params: {:.2f}M'.format(
+        logger.info("Total params: {:.2f}M".format(
             sum(p.numel() for p in model.parameters())/1e6))
 
         return model
 
     if args.local_rank == -1:
-        device = torch.device("cuda", args.gpu_id)
+        device = torch.device('cuda', args.gpu_id)
         args.world_size = 1
         args.n_gpu = torch.cuda.device_count()
     else:
         torch.cuda.set_device(args.local_rank)
-        device = torch.device("cuda", args.local_rank)
-        torch.distributed.init_process_group(backend="nccl")
+        device = torch.device('cuda', args.local_rank)
+        torch.distributed.init_process_group(backend='nccl')
         args.world_size = torch.distributed.get_world_size()
         args.n_gpu = 1
 
@@ -231,7 +232,7 @@ def main():
 
     # optimizer = optim.SGD(model.parameters(), lr=args.lr,
     #                       momentum=0.9, nesterov=args.nesterov)
-    optimizer = optim.AdamW(model.parameters(), lr=args.lr)
+    optimizer = optim.AdamW(model.parameters(), lr=args.lr, eps=1e-6)
 
     args.iteration = int(args.k_img / args.batch_size)
     args.total_steps = args.epochs * args.iteration
@@ -370,14 +371,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
 
         Lu = (F.cross_entropy(logits_u_s, targets_u,
                               reduction='none') * mask).mean()
-        # L2 Regulization
-        # wd = torch.zeros(1, dtype=torch.float32,
-        #                  device=args.device, requires_grad=True)
-        # for n, p in model.named_parameters():
-        #     if 'bn' not in n:
-        #         wd = wd + (p**2).sum() / 2.
 
-        # loss = Lx + args.lambda_u * Lu + args.wdecay * wd
         loss = Lx + args.lambda_u * Lu
 
         if args.amp:
@@ -389,6 +383,11 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
         losses.update(loss.item())
         losses_x.update(Lx.item())
         losses_u.update(Lu.item())
+
+        if args.amp:
+            clip_grad_norm_(amp.master_params(optimizer), 1.0)
+        else:
+            clip_grad_norm_(model.parameters(), 1.0)
 
         optimizer.step()
         scheduler.step()
@@ -503,6 +502,7 @@ class ModelEMA(object):
                 if self.device:
                     model_v = model_v.to(device=self.device)
                 ema_v.copy_(ema_v * self.decay + (1. - self.decay) * model_v)
+                # weight decay
                 if 'bn' not in k:
                     msd[k] = msd[k] * (1. - self.wd)
 
