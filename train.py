@@ -13,7 +13,6 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.nn.utils import clip_grad_norm_
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
@@ -179,12 +178,11 @@ def main():
         level=logging.INFO if args.local_rank in [-1, 0] else logging.WARN)
 
     logger.warning(
-        "Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s",
-        args.local_rank,
-        args.device,
-        args.n_gpu,
-        bool(args.local_rank != -1),
-        args.amp)
+        f"Process rank: {args.local_rank}, "
+        f"device: {args.device}, "
+        f"n_gpu: {args.n_gpu}, "
+        f"distributed training: {bool(args.local_rank != -1)}, "
+        f"16-bits training: {args.amp}",)
 
     logger.info(dict(args._get_kwargs()))
 
@@ -230,7 +228,8 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers)
 
-    optimizer = optim.AdamW(model.parameters(), lr=args.lr)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr,
+                          momentum=0.9, nesterov=args.nesterov)
 
     args.iteration = int(args.k_img / args.batch_size)
     args.total_steps = args.epochs * args.iteration
@@ -381,11 +380,6 @@ def train(args, labeled_trainloader, unlabeled_trainloader,
         losses.update(loss.item())
         losses_x.update(Lx.item())
         losses_u.update(Lu.item())
-
-        if args.amp:
-            clip_grad_norm_(amp.master_params(optimizer), 1.0)
-        else:
-            clip_grad_norm_(model.parameters(), 1.0)
 
         optimizer.step()
         scheduler.step()
