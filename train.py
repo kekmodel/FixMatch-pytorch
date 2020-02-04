@@ -232,7 +232,7 @@ def main():
 
     # optimizer = optim.SGD(model.parameters(), lr=args.lr,
     #                       momentum=0.9, nesterov=args.nesterov)
-    optimizer = optim.AdamW(model.parameters(), lr=args.lr, eps=1e-6)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     args.iteration = int(args.k_img / args.batch_size)
     args.total_steps = args.epochs * args.iteration
