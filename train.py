@@ -26,7 +26,6 @@ logger = logging.getLogger(__name__)
 
 DATASET_GETTERS = {'cifar10': get_cifar10,
                    'cifar100': get_cifar100}
-
 best_acc = 0
 
 
