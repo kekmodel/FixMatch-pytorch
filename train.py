@@ -230,9 +230,16 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers)
 
-    # optimizer = optim.SGD(model.parameters(), lr=args.lr,
-    #                       momentum=0.9, nesterov=args.nesterov)
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    grouped_parameters = [
+        {
+            "params": [p for n, p in model.named_parameters() if 'bn' not in n],
+            "weight_decay": 0.01,
+        },
+        {
+            "params": [p for n, p in model.named_parameters() if 'bn' in n],
+            "weight_decay": 0.0
+        }]
+    optimizer = optim.Adam(grouped_parameters, lr=args.lr)
 
     args.iteration = int(args.k_img / args.batch_size)
     args.total_steps = args.epochs * args.iteration
