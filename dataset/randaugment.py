@@ -134,6 +134,7 @@ def TranslateX(img, v):
     if random.random() < 0.5:
         v = -v
     assert -0.3 <= v <= 0.3
+    v = int(v * img.size[0])
     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, v, 0, 1, 0))
 
 
@@ -142,6 +143,7 @@ def TranslateY(img, v):
     if random.random() < 0.5:
         v = -v
     assert -0.3 <= v <= 0.3
+    v = int(v * img.size[1])
     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, 0, 1, v))
 
 
