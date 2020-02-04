@@ -230,7 +230,7 @@ def main():
     optimizer = optim.SGD(model.parameters(), lr=args.lr,
                           momentum=0.9, nesterov=args.nesterov)
 
-    args.iteration = int(args.k_img / args.batch_size)
+    args.iteration = args.k_img // args.batch_size // args.world_size
     args.total_steps = args.epochs * args.iteration
     scheduler = get_cosine_schedule_with_warmup(
         optimizer, args.warmup * args.iteration, args.total_steps)
