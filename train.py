@@ -252,9 +252,10 @@ def main():
         best_acc = checkpoint['best_acc']
         start_epoch = checkpoint['epoch']
         model.load_state_dict(checkpoint['state_dict'])
-        ema_model.ema.load_state_dict(checkpoint['ema_state_dict'])
+        if args.use_ema:
+            ema_model.ema.load_state_dict(checkpoint['ema_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
-        scheduler.load_state_dict(checkpoint['schduler'])
+        scheduler.load_state_dict(checkpoint['scheduler'])
 
     if args.local_rank == 0:
         torch.distributed.barrier()
