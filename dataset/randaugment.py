@@ -212,9 +212,9 @@ class RandAugmentMC(object):
 
     def __call__(self, img):
         ops = random.choices(self.augment_pool, k=self.n)
-        for op in ops:
+        for op, max_v, bias in ops:
             val = np.random.randint(1, self.m)
             if random.random() < 0.5:
-                img = op(img, val)
+                img = op(img, val, max_v, bias)
         img = CutoutAbs(img, 16)
         return img
