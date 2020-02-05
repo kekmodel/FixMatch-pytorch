@@ -197,7 +197,7 @@ class RandAugmentPC(object):
         for op, max_v, bias in ops:
             prob = np.random.uniform(0.2, 0.8)
             if random.random() + prob >= 1:
-                img = op(img, self.m, max_v, bias)
+                img = op(img, v=self.m, max_v=max_v, bias=bias)
         img = CutoutAbs(img, 16)
         return img
 
@@ -213,8 +213,8 @@ class RandAugmentMC(object):
     def __call__(self, img):
         ops = random.choices(self.augment_pool, k=self.n)
         for op, max_v, bias in ops:
-            val = np.random.randint(1, self.m)
+            v = np.random.randint(1, self.m)
             if random.random() < 0.5:
-                img = op(img, val, max_v, bias)
+                img = op(img, v=v, max_v=max_v, bias=bias)
         img = CutoutAbs(img, 16)
         return img
