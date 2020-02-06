@@ -7,7 +7,6 @@ import torch.nn.functional as F
 logger = logging.getLogger(__name__)
 
 
-@torch.jit.script
 def mish(x):
     '''
     Applies the mish function element-wise:
