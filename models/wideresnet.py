@@ -7,17 +7,25 @@ import torch.nn.functional as F
 logger = logging.getLogger(__name__)
 
 
+@torch.jit.script
+def mish(x):
+    '''
+    Applies the mish function element-wise:
+    mish(x) = x * tanh(softplus(x)) = x * tanh(ln(1 + exp(x)))
+    See additional documentation for mish class.
+    '''
+    return x * torch.tanh(F.softplus(x))
+
+
 class BasicBlock(nn.Module):
     def __init__(self, in_planes, out_planes, stride, drop_rate=0.0, activate_before_residual=False):
         super(BasicBlock, self).__init__()
         self.bn1 = nn.BatchNorm2d(in_planes, momentum=0.001)
-        self.relu1 = nn.LeakyReLU(negative_slope=0.1, inplace=True)
-        # self.relu1 = nn.ReLU(inplace=True)
+        self.relu1 = mish
         self.conv1 = nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                                padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(out_planes, momentum=0.001)
-        self.relu2 = nn.LeakyReLU(negative_slope=0.1, inplace=True)
-        # self.relu2 = nn.ReLU(inplace=True)
+        self.relu2 = mish
         self.conv2 = nn.Conv2d(out_planes, out_planes, kernel_size=3, stride=1,
                                padding=1, bias=False)
         self.drop_rate = drop_rate
@@ -76,8 +84,7 @@ class WideResNet(nn.Module):
             n, channels[2], channels[3], block, 2, drop_rate)
         # global average pooling and classifier
         self.bn1 = nn.BatchNorm2d(channels[3], momentum=0.001)
-        self.relu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
-        # self.relu = nn.ReLU(inplace=True)
+        self.relu = mish
         self.fc = nn.Linear(channels[3], num_classes)
         self.channels = channels[3]
 

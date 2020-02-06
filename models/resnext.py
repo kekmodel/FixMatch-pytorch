@@ -1,9 +1,20 @@
 import logging
 
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 logger = logging.getLogger(__name__)
+
+
+@torch.jit.script
+def mish(x):
+    '''
+    Applies the mish function element-wise:
+    mish(x) = x * tanh(softplus(x)) = x * tanh(ln(1 + exp(x)))
+    See additional documentation for mish class.
+    '''
+    return x * torch.tanh(F.softplus(x))
 
 
 class ResNeXtBottleneck(nn.Module):
@@ -32,8 +43,7 @@ class ResNeXtBottleneck(nn.Module):
                                    kernel_size=3, stride=stride, padding=1,
                                    groups=cardinality, bias=False)
         self.bn = nn.BatchNorm2d(D, momentum=0.001)
-        self.act = nn.LeakyReLU(negative_slope=0.1, inplace=True)
-        # self.act = nn.ReLU(inplace=True)
+        self.act = mish
         self.conv_expand = nn.Conv2d(
             D, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
         self.bn_expand = nn.BatchNorm2d(out_channels, momentum=0.001)
@@ -89,8 +99,7 @@ class CifarResNeXt(nn.Module):
 
         self.conv_1_3x3 = nn.Conv2d(3, 64, 3, 1, 1, bias=False)
         self.bn_1 = nn.BatchNorm2d(64, momentum=0.001)
-        self.act = nn.LeakyReLU(negative_slope=0.1, inplace=True)
-        # self.act = nn.ReLU(inplace=True)
+        self.act = mish
         self.stage_1 = self.block('stage_1', self.stages[0], self.stages[1], 1)
         self.stage_2 = self.block('stage_2', self.stages[1], self.stages[2], 2)
         self.stage_3 = self.block('stage_3', self.stages[2], self.stages[3], 2)
