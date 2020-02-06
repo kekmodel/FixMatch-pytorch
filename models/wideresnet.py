@@ -8,15 +8,13 @@ logger = logging.getLogger(__name__)
 
 
 def mish(x):
-    '''
-    Applies the mish function element-wise:
-    mish(x) = x * tanh(softplus(x)) = x * tanh(ln(1 + exp(x)))
-    See additional documentation for mish class.
-    '''
+    """Mish: A Self Regularized Non-Monotonic Neural Activation Function (https://arxiv.org/abs/1908.08681)"""
     return x * torch.tanh(F.softplus(x))
 
 
 class PSBatchNorm2d(nn.BatchNorm2d):
+    """How Does BN Increase Collapsed Neural Network Filters? (https://arxiv.org/abs/2001.11216)"""
+
     def __init__(self, num_features, alpha=0.1, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True):
         super().__init__(num_features, eps, momentum, affine, track_running_stats)
         self.alpha = alpha
