@@ -178,7 +178,7 @@ def my_augment_pool():
             (ShearX, 0.3, 0),
             (ShearY, 0.3, 0),
             (Solarize, 256, 0),
-            (SolarizeAdd, 30, 0),
+            (SolarizeAdd, 110, 0),
             (TranslateX, 0.45, 0),
             (TranslateY, 0.45, 0)]
     return augs
