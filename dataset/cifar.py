@@ -5,7 +5,7 @@ from PIL import Image
 from torchvision import datasets
 from torchvision import transforms
 
-from .randaugment import RandAugmentMC, RandAugmentPC
+from .randaugment import RandAugmentMC
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +136,12 @@ class TransformFix(object):
             transforms.RandomCrop(size=32,
                                   padding=int(32*0.125),
                                   padding_mode='reflect')])
-        self.strong = RandAugmentPC(n=3, m=9)
+        self.strong = transforms.Compose([
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomCrop(size=32,
+                                  padding=int(32*0.125),
+                                  padding_mode='reflect'),
+            RandAugmentMC(n=2, m=10)])
         self.normalize = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(mean=mean, std=std)])

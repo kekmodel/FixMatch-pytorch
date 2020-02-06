@@ -208,7 +208,7 @@ class RandAugmentMC(object):
         assert 1 <= m <= 10
         self.n = n
         self.m = m
-        self.augment_pool = my_augment_pool()
+        self.augment_pool = fixmatch_augment_pool()
 
     def __call__(self, img):
         ops = random.choices(self.augment_pool, k=self.n)
