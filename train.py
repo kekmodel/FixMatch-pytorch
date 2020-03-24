@@ -217,7 +217,7 @@ def main():
     unlabeled_trainloader = DataLoader(
         unlabeled_dataset,
         sampler=train_sampler(unlabeled_dataset),
-        batch_size=args.batch_size,
+        batch_size=args.batch_size*args.mu,
         num_workers=args.num_workers,
         drop_last=True)
 
