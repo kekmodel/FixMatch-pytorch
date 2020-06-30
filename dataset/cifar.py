@@ -69,8 +69,8 @@ def get_cifar100(root, num_labeled, num_expand_x, num_expand_u):
     base_dataset = datasets.CIFAR100(
         root, train=True, download=True)
 
-    train_labeled_idxs, train_unlabeled_idxs = x_u_split(
-        base_dataset.targets, num_labeled, num_classes=100)
+    train_labeled_idxs, train_unlabeled_idxs =x_u_split(
+        base_dataset.targets, num_labeled, num_expand_x, num_expand_u, num_classes=100)
 
     train_labeled_dataset = CIFAR100SSL(
         root, train_labeled_idxs, train=True,
