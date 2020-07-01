@@ -240,9 +240,6 @@ def main():
 
     start_epoch = 0
 
-    if args.local_rank not in [-1, 0]:
-        torch.distributed.barrier()
-
     if args.resume:
         logger.info("==> Resuming from checkpoint..")
         assert os.path.isfile(
@@ -256,9 +253,6 @@ def main():
             ema_model.ema.load_state_dict(checkpoint['ema_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         scheduler.load_state_dict(checkpoint['scheduler'])
-
-    if args.local_rank == 0:
-        torch.distributed.barrier()
 
     if args.amp:
         from apex import amp
