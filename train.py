@@ -41,6 +41,7 @@ def set_seed(args):
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+    torch.cuda.manual_seed(args.seed)
     if args.n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
 
@@ -301,7 +302,7 @@ def main():
 
         is_best = test_acc > best_acc
         best_acc = max(test_acc, best_acc)
-        if args.local_rank == -1 or torch.distributed.get_rank() == 0:
+        if args.local_rank in [-1, 0]:
             model_to_save = model.module if hasattr(model, "module") else model
             if args.use_ema:
                 ema_to_save = ema_model.ema.module if hasattr(
