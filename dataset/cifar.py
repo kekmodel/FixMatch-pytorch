@@ -103,7 +103,7 @@ def x_u_split(labels,
         idx = np.where(labels == i)[0]
         np.random.shuffle(idx)
         labeled_idx.extend(idx[:label_per_class])
-        unlabeled_idx.extend(idx[label_per_class:])
+        unlabeled_idx.extend(idx[:])
 
     exapand_labeled = num_expand_x // len(labeled_idx)
     exapand_unlabeled = num_expand_u // len(unlabeled_idx)
