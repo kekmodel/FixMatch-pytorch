@@ -41,7 +41,6 @@ def set_seed(args):
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    torch.cuda.manual_seed(args.seed)
     if args.n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
 
@@ -105,7 +104,7 @@ def main():
                         help='directory to output the result')
     parser.add_argument('--resume', default='', type=str,
                         help='path to latest checkpoint (default: none)')
-    parser.add_argument('--seed', type=int, default=-1,
+    parser.add_argument('--seed', type=int, default=None,
                         help="random seed (-1: don't use random seed)")
     parser.add_argument("--amp", action="store_true",
                         help="use 16-bit (mixed) precision through NVIDIA apex AMP")
@@ -186,7 +185,7 @@ def main():
 
     logger.info(dict(args._get_kwargs()))
 
-    if args.seed != -1:
+    if args.seed is not None:
         set_seed(args)
 
     if args.local_rank in [-1, 0]:
