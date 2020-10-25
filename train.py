@@ -165,7 +165,7 @@ def main():
         args.num_classes = 100
         if args.arch == 'wideresnet':
             args.model_depth = 28
-            args.model_width = 10
+            args.model_width = 8
         if args.arch == 'resnext':
             args.model_cardinality = 8
             args.model_depth = 29
