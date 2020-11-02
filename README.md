@@ -20,12 +20,12 @@ Now only experiments on CIFAR-10 and CIFAR-100 are available.
 Train the model by 4000 labeled data of CIFAR-10 dataset:
 
 ```
-python train.py --dataset cifar10 --num-labeled 4000 --arch wideresnet --batch-size 64 --lr 0.03 --out cifar10@4000
+python train.py --dataset cifar10 --num-labeled 4000 --arch wideresnet --batch-size 64 --lr 0.03 --out results/cifar10@4000
 ```
 
 Train the model by 10000 labeled data of CIFAR-100 dataset by using DistributedDataParallel:
 ```
-python -m torch.distributed.launch --nproc_per_node 4 ./train.py --dataset cifar100 --num-labeled 10000 --arch wideresnet --batch-size 16 --lr 0.03 --out cifar100@10000
+python -m torch.distributed.launch --nproc_per_node 4 ./train.py --dataset cifar100 --num-labeled 10000 --arch wideresnet --batch-size 16 --lr 0.03 --out results/cifar100@10000
 ```
 \* When using DDP, do not use a seed.
 
