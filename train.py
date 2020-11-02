@@ -40,7 +40,6 @@ def set_seed(args):
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    torch.cuda.manual_seed(args.seed)
     if args.n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
 
@@ -118,7 +117,11 @@ def main():
                         help='directory to output the result')
     parser.add_argument('--resume', default='', type=str,
                         help='path to latest checkpoint (default: none)')
+<<<<<<< HEAD
     parser.add_argument('--seed', default=5, type=int,
+=======
+    parser.add_argument('--seed', type=int, default=None,
+>>>>>>> 037b4461c16747971d2c52faacbcd3afb563ea22
                         help="random seed (-1: don't use random seed)")
     parser.add_argument("--amp", action="store_true",
                         help="use 16-bit (mixed) precision through NVIDIA apex AMP")
@@ -180,7 +183,11 @@ def main():
         if args.arch == 'wideresnet':
             args.model_depth = 28
             args.model_width = 8
+<<<<<<< HEAD
         elif args.arch == 'resnext':
+=======
+        if args.arch == 'resnext':
+>>>>>>> 037b4461c16747971d2c52faacbcd3afb563ea22
             args.model_cardinality = 8
             args.model_depth = 29
             args.model_width = 64
