@@ -36,7 +36,6 @@ def set_seed(args):
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    torch.cuda.manual_seed(args.seed)
     if args.n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
 
@@ -82,7 +81,7 @@ def main():
                         help='dataset name')
     parser.add_argument('--total-steps', default=2**20, type=int,
                         help='number of total steps to run')
-    parser.add_argument('--eval-steps', default=1024, type=int,
+    parser.add_argument('--eval-step', default=1024, type=int,
                         help='number of eval steps to run')
     parser.add_argument('--start-epoch', default=0, type=int,
                         help='manual epoch number (useful on restarts)')
@@ -112,8 +111,8 @@ def main():
                         help='directory to output the result')
     parser.add_argument('--resume', default='', type=str,
                         help='path to latest checkpoint (default: none)')
-    parser.add_argument('--seed', default=5, type=int,
-                        help="random seed (-1: don't use random seed)")
+    parser.add_argument('--seed', default=None, type=int,
+                        help="random seed")
     parser.add_argument("--amp", action="store_true",
                         help="use 16-bit (mixed) precision through NVIDIA apex AMP")
     parser.add_argument("--opt_level", type=str, default="O1",
@@ -178,8 +177,27 @@ def main():
         os.makedirs(args.out, exist_ok=True)
         writer = SummaryWriter(args.out)
 
+    if args.dataset == 'cifar10':
+        args.num_classes = 10
+        if args.arch == 'wideresnet':
+            args.model_depth = 28
+            args.model_width = 2
+        elif args.arch == 'resnext':
+            args.model_cardinality = 4
+            args.model_depth = 28
+            args.model_width = 4
+
+    elif args.dataset == 'cifar100':
+        args.num_classes = 100
+        if args.arch == 'wideresnet':
+            args.model_depth = 28
+            args.model_width = 8
+        elif args.arch == 'resnext':
+            args.model_cardinality = 8
+            args.model_depth = 29
+            args.model_width = 64
     labeled_dataset, unlabeled_dataset, test_dataset = DATASET_GETTERS[args.dataset](
-        './data', args.num_labeled)
+        args, './data')
 
     train_sampler = RandomSampler if args.local_rank == -1 else DistributedSampler
 
@@ -203,26 +221,6 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers)
 
-    if args.dataset == 'cifar10':
-        args.num_classes = 10
-        if args.arch == 'wideresnet':
-            args.model_depth = 28
-            args.model_width = 2
-        elif args.arch == 'resnext':
-            args.model_cardinality = 4
-            args.model_depth = 28
-            args.model_width = 4
-
-    elif args.dataset == 'cifar100':
-        args.num_classes = 100
-        if args.arch == 'wideresnet':
-            args.model_depth = 28
-            args.model_width = 8
-        elif args.arch == 'resnext':
-            args.model_cardinality = 8
-            args.model_depth = 29
-            args.model_width = 64
-
     if args.local_rank not in [-1, 0]:
         torch.distributed.barrier()
 
@@ -243,7 +241,7 @@ def main():
     optimizer = optim.SGD(grouped_parameters, lr=args.lr,
                           momentum=0.9, nesterov=args.nesterov)
 
-    args.epochs = math.ceil(args.total_steps / args.eval_steps)
+    args.epochs = math.ceil(args.total_steps / args.eval_step)
     scheduler = get_cosine_schedule_with_warmup(
         optimizer, args.warmup, args.total_steps)
 
@@ -309,9 +307,9 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
     model.train()
     for epoch in range(args.start_epoch, args.epochs):
         if not args.no_progress:
-            p_bar = tqdm(range(args.eval_steps),
+            p_bar = tqdm(range(args.eval_step),
                          disable=args.local_rank not in [-1, 0])
-        for batch_idx in range(args.eval_steps):
+        for batch_idx in range(args.eval_step):
             try:
                 inputs_x, targets_x = labeled_iter.next()
             except:
@@ -369,7 +367,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
                     epoch=epoch + 1,
                     epochs=args.epochs,
                     batch=batch_idx + 1,
-                    iter=args.eval_steps,
+                    iter=args.eval_step,
                     lr=scheduler.get_last_lr()[0],
                     data=data_time.avg,
                     bt=batch_time.avg,
