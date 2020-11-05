@@ -12,7 +12,7 @@ def mish(x):
     return x * torch.tanh(F.softplus(x))
 
 
-class PSBatchNorm2d(nn.BatchNorm2d):
+class nn.BatchNorm2d(nn.BatchNorm2d):
     """How Does BN Increase Collapsed Neural Network Filters? (https://arxiv.org/abs/2001.11216)"""
 
     def __init__(self, num_features, alpha=0.1, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True):
@@ -44,15 +44,15 @@ class ResNeXtBottleneck(nn.Module):
         D = cardinality * int(base_width * width_ratio)
         self.conv_reduce = nn.Conv2d(
             in_channels, D, kernel_size=1, stride=1, padding=0, bias=False)
-        self.bn_reduce = PSBatchNorm2d(D, momentum=0.001)
+        self.bn_reduce = nn.BatchNorm2d(D, momentum=0.001)
         self.conv_conv = nn.Conv2d(D, D,
                                    kernel_size=3, stride=stride, padding=1,
                                    groups=cardinality, bias=False)
-        self.bn = PSBatchNorm2d(D, momentum=0.001)
+        self.bn = nn.BatchNorm2d(D, momentum=0.001)
         self.act = mish
         self.conv_expand = nn.Conv2d(
             D, out_channels, kernel_size=1, stride=1, padding=0, bias=False)
-        self.bn_expand = PSBatchNorm2d(out_channels, momentum=0.001)
+        self.bn_expand = nn.BatchNorm2d(out_channels, momentum=0.001)
 
         self.shortcut = nn.Sequential()
         if in_channels != out_channels:
@@ -63,7 +63,7 @@ class ResNeXtBottleneck(nn.Module):
                                                padding=0,
                                                bias=False))
             self.shortcut.add_module(
-                'shortcut_bn', PSBatchNorm2d(out_channels, momentum=0.001))
+                'shortcut_bn', nn.BatchNorm2d(out_channels, momentum=0.001))
 
     def forward(self, x):
         bottleneck = self.conv_reduce.forward(x)
@@ -104,7 +104,7 @@ class CifarResNeXt(nn.Module):
                        self.widen_factor, 256 * self.widen_factor]
 
         self.conv_1_3x3 = nn.Conv2d(3, 64, 3, 1, 1, bias=False)
-        self.bn_1 = PSBatchNorm2d(64, momentum=0.001)
+        self.bn_1 = nn.BatchNorm2d(64, momentum=0.001)
         self.act = mish
         self.stage_1 = self.block('stage_1', self.stages[0], self.stages[1], 1)
         self.stage_2 = self.block('stage_2', self.stages[1], self.stages[2], 2)
@@ -116,7 +116,7 @@ class CifarResNeXt(nn.Module):
                 nn.init.kaiming_normal_(m.weight,
                                         mode='fan_out',
                                         nonlinearity='leaky_relu')
-            elif isinstance(m, PSBatchNorm2d):
+            elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1.0)
                 nn.init.constant_(m.bias, 0.0)
             elif isinstance(m, nn.Linear):
