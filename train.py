@@ -108,8 +108,6 @@ def main():
                         help='pseudo label temperature')
     parser.add_argument('--threshold', default=0.95, type=float,
                         help='pseudo label threshold')
-    parser.add_argument('--k-img', default=65536, type=int,
-                        help='number of labeled examples')
     parser.add_argument('--out', default='result',
                         help='directory to output the result')
     parser.add_argument('--resume', default='', type=str,
