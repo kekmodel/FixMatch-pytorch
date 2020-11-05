@@ -20,7 +20,7 @@ Now only experiments on CIFAR-10 and CIFAR-100 are available.
 Train the model by 4000 labeled data of CIFAR-10 dataset:
 
 ```
-python train.py --dataset cifar10 --num-labeled 4000 --arch wideresnet --batch-size 64 --lr 0.03 --out results/cifar10@4000
+python train.py --dataset cifar10 --num-labeled 4000 --arch wideresnet --batch-size 64 --lr 0.03 --seed 5 --out results/cifar10@4000.5
 ```
 
 Train the model by 10000 labeled data of CIFAR-100 dataset by using DistributedDataParallel:
@@ -47,8 +47,6 @@ tensorboard --logdir=<your out_dir>
 |:---|:---:|:---:|:---:|
 |Paper (RA) | 51.15 ± 1.75 | 71.71 ± 0.11 | 77.40 ± 0.12 |
 |This code | - | - | - |
-
-\* Results of this code were evaluated on 1 run.
 
 ## References
 - Unofficial PyTorch implementation of MixMatch: A Holistic Approach to Semi-Supervised Learning (https://github.com/YU1ut/MixMatch-pytorch)
