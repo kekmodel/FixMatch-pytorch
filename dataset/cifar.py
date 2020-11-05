@@ -17,7 +17,7 @@ normal_mean = (0.5, 0.5, 0.5)
 normal_std = (0.5, 0.5, 0.5)
 
 
-def get_cifar10(root, num_labeled, num_expand_x, num_expand_u):
+def get_cifar10(root, num_labeled):
     transform_labeled = transforms.Compose([
         transforms.RandomHorizontalFlip(),
         transforms.RandomCrop(size=32,
@@ -33,7 +33,7 @@ def get_cifar10(root, num_labeled, num_expand_x, num_expand_u):
     base_dataset = datasets.CIFAR10(root, train=True, download=True)
 
     train_labeled_idxs, train_unlabeled_idxs = x_u_split(
-        base_dataset.targets, num_labeled, num_expand_x, num_expand_u, num_classes=10)
+        base_dataset.targets, num_labeled, num_classes=10)
 
     train_labeled_dataset = CIFAR10SSL(
         root, train_labeled_idxs, train=True,
@@ -113,11 +113,11 @@ class TransformFix(object):
                                   padding=int(32*0.125),
                                   padding_mode='reflect')])
         self.strong = transforms.Compose([
+            RandAugmentMC(n=2, m=10),
             transforms.RandomHorizontalFlip(),
             transforms.RandomCrop(size=32,
                                   padding=int(32*0.125),
-                                  padding_mode='reflect'),
-            RandAugmentMC(n=2, m=10)])
+                                  padding_mode='reflect')])
         self.normalize = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(mean=mean, std=std)])
