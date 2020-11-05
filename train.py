@@ -108,7 +108,7 @@ def main():
                         help='coefficient of unlabeled batch size')
     parser.add_argument('--lambda-u', default=1, type=float,
                         help='coefficient of unlabeled loss')
-    parser.add_argument('--T', default=0.5, type=float,
+    parser.add_argument('--T', default=1, type=float,
                         help='pseudo label temperature')
     parser.add_argument('--threshold', default=0.95, type=float,
                         help='pseudo label threshold')
