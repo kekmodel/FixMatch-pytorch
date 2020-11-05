@@ -113,11 +113,11 @@ class TransformFix(object):
                                   padding=int(32*0.125),
                                   padding_mode='reflect')])
         self.strong = transforms.Compose([
-            RandAugmentMC(n=2, m=10),
             transforms.RandomHorizontalFlip(),
             transforms.RandomCrop(size=32,
                                   padding=int(32*0.125),
-                                  padding_mode='reflect')])
+                                  padding_mode='reflect'),
+            RandAugmentMC(n=2, m=10)])
         self.normalize = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(mean=mean, std=std)])
