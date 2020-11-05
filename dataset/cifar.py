@@ -176,3 +176,7 @@ class CIFAR100SSL(datasets.CIFAR100):
             target = self.target_transform(target)
 
         return img, target
+
+
+DATASET_GETTERS = {'cifar10': get_cifar10,
+                   'cifar100': get_cifar100}

@@ -17,13 +17,10 @@ from torch.utils.data.distributed import DistributedSampler
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from dataset.cifar import get_cifar10, get_cifar100
+from dataset.cifar import DATASET_GETTERS
 from utils import AverageMeter, accuracy
 
 logger = logging.getLogger(__name__)
-
-DATASET_GETTERS = {'cifar10': get_cifar10,
-                   'cifar100': get_cifar100}
 best_acc = 0
 
 
@@ -290,7 +287,6 @@ def main():
         f"  Total train batch size = {args.batch_size*args.world_size}")
     logger.info(f"  Total optimization steps = {args.total_steps}")
 
-    test_accs = []
     model.zero_grad()
     train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
           model, optimizer, ema_model, scheduler, writer)
