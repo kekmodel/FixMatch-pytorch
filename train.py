@@ -196,6 +196,7 @@ def main():
             args.model_cardinality = 8
             args.model_depth = 29
             args.model_width = 64
+
     labeled_dataset, unlabeled_dataset, test_dataset = DATASET_GETTERS[args.dataset](
         args, './data')
 
