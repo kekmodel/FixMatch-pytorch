@@ -5,7 +5,6 @@ import os
 import random
 import shutil
 import time
-from copy import deepcopy
 from collections import OrderedDict
 
 import numpy as np
@@ -146,10 +145,8 @@ def main():
                                          depth=args.model_depth,
                                          width=args.model_width,
                                          num_classes=args.num_classes)
-
         logger.info("Total params: {:.2f}M".format(
             sum(p.numel() for p in model.parameters())/1e6))
-
         return model
 
     if args.local_rank == -1:
@@ -164,26 +161,6 @@ def main():
         args.n_gpu = 1
 
     args.device = device
-
-    if args.dataset == 'cifar10':
-        args.num_classes = 10
-        if args.arch == 'wideresnet':
-            args.model_depth = 28
-            args.model_width = 2
-        elif args.arch == 'resnext':
-            args.model_cardinality = 4
-            args.model_depth = 28
-            args.model_width = 4
-
-    elif args.dataset == 'cifar100':
-        args.num_classes = 100
-        if args.arch == 'wideresnet':
-            args.model_depth = 28
-            args.model_width = 8
-        elif args.arch == 'resnext':
-            args.model_cardinality = 8
-            args.model_depth = 29
-            args.model_width = 64
 
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
@@ -205,16 +182,6 @@ def main():
     if args.local_rank in [-1, 0]:
         os.makedirs(args.out, exist_ok=True)
         writer = SummaryWriter(args.out)
-
-    if args.local_rank not in [-1, 0]:
-        torch.distributed.barrier()
-
-    model = create_model(args)
-
-    if args.local_rank == 0:
-        torch.distributed.barrier()
-
-    model.to(args.device)
 
     labeled_dataset, unlabeled_dataset, test_dataset = DATASET_GETTERS[args.dataset](
         './data', args.num_labeled)
@@ -241,7 +208,44 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers)
 
-    optimizer = optim.SGD(model.parameters(), lr=args.lr,
+    if args.dataset == 'cifar10':
+        args.num_classes = 10
+        if args.arch == 'wideresnet':
+            args.model_depth = 28
+            args.model_width = 2
+        elif args.arch == 'resnext':
+            args.model_cardinality = 4
+            args.model_depth = 28
+            args.model_width = 4
+
+    elif args.dataset == 'cifar100':
+        args.num_classes = 100
+        if args.arch == 'wideresnet':
+            args.model_depth = 28
+            args.model_width = 8
+        elif args.arch == 'resnext':
+            args.model_cardinality = 8
+            args.model_depth = 29
+            args.model_width = 64
+
+    if args.local_rank not in [-1, 0]:
+        torch.distributed.barrier()
+
+    model = create_model(args)
+
+    if args.local_rank == 0:
+        torch.distributed.barrier()
+
+    model.to(args.device)
+
+    no_decay = ['bias', 'bn']
+    grouped_parameters = [
+        {'params': [p for n, p in model.named_parameters() if not any(
+            nd in n for nd in no_decay)], 'weight_decay': args.wdecay},
+        {'params': [p for n, p in model.named_parameters() if any(
+            nd in n for nd in no_decay)], 'weight_decay': 0.0}
+    ]
+    optimizer = optim.SGD(grouped_parameters, lr=args.lr,
                           momentum=0.9, nesterov=args.nesterov)
 
     args.epochs = math.ceil(args.total_steps / args.eval_steps)
@@ -249,6 +253,7 @@ def main():
         optimizer, args.warmup, args.total_steps)
 
     if args.use_ema:
+        from models.ema import ModelEMA
         ema_model = ModelEMA(args, model, args.ema_decay)
 
     args.start_epoch = 0
@@ -366,7 +371,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
             end = time.time()
             mask_prob = mask.mean().item()
             if not args.no_progress:
-                p_bar.set_description("Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.6f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. Mask: {mask:.4f}. ".format(
+                p_bar.set_description("Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.4f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. Mask: {mask:.2f}. ".format(
                     epoch=epoch + 1,
                     epochs=args.epochs,
                     batch=batch_idx + 1,
@@ -468,32 +473,6 @@ def test(args, test_loader, model, epoch):
     logger.info("top-1 acc: {:.2f}".format(top1.avg))
     logger.info("top-5 acc: {:.2f}".format(top5.avg))
     return losses.avg, top1.avg
-
-
-class ModelEMA(object):
-    def __init__(self, args, model, decay):
-        self.ema = deepcopy(model)
-        self.ema.to(args.device)
-        self.ema.eval()
-        self.decay = decay
-        self.ema_has_module = hasattr(self.ema, 'module')
-        self.wd = args.wdecay
-        for p in self.ema.parameters():
-            p.requires_grad_(False)
-
-    def update(self, model, lr):
-        wd = lr * self.wd
-        needs_module = hasattr(model, 'module') and not self.ema_has_module
-        with torch.no_grad():
-            msd = model.state_dict()
-            for k, ema_v in self.ema.state_dict().items():
-                if needs_module:
-                    k = 'module.' + k
-                model_v = msd[k].detach()
-                ema_v.copy_(ema_v * self.decay + (1. - self.decay) * model_v)
-                # weight decay
-                if 'bn' not in k and 'bias' not in k:
-                    msd[k] = msd[k] * (1. - wd)
 
 
 if __name__ == '__main__':
