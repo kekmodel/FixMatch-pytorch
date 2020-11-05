@@ -360,7 +360,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
             optimizer.step()
             scheduler.step()
             if args.use_ema:
-                ema_model.update(model, scheduler.get_last_lr()[0])
+                ema_model.update(model)
             model.zero_grad()
 
             batch_time.update(time.time() - end)

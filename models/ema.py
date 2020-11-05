@@ -15,7 +15,7 @@ class ModelEMA(object):
         for p in self.ema.parameters():
             p.requires_grad_(False)
 
-    def update(self, model, lr):
+    def update(self, model):
         needs_module = hasattr(model, 'module') and not self.ema_has_module
         with torch.no_grad():
             msd = model.state_dict()
