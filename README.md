@@ -39,17 +39,19 @@ tensorboard --logdir=<your out_dir>
 ### CIFAR10
 | #Labels | 40 | 250 | 4000 |
 |:---|:---:|:---:|:---:|
-|Paper (RA) | 86.19 ± 3.37 | 94.93 ± 0.65 | 95.74 ± 0.05 |
-|This code | - | - | 94.72 |
+| Paper (RA) | 86.19 ± 3.37 | 94.93 ± 0.65 | 95.74 ± 0.05 |
+| This code | - | - | WIP |
+| Acc. curves | [link] | [link] | [link](https://tensorboard.dev/experiment/14CKs60sQCWSgfew3c07Ig/) |
 
 ### CIFAR100
 | #Labels | 400 | 2500 | 10000 |
 |:---|:---:|:---:|:---:|
 |Paper (RA) | 51.15 ± 1.75 | 71.71 ± 0.11 | 77.40 ± 0.12 |
 |This code | - | - | - |
+| Acc. curves | [link] | [link] | [link] |
 
 ## References
-- Unofficial PyTorch implementation of MixMatch: A Holistic Approach to Semi-Supervised Learning (https://github.com/YU1ut/MixMatch-pytorch)
+- [Unofficial PyTorch implementation of MixMatch: A Holistic Approach to Semi-Supervised Learning](https://github.com/YU1ut/MixMatch-pytorch)
 ```
 @article{sohn2020fixmatch,
     title={FixMatch: Simplifying Semi-Supervised Learning with Consistency and Confidence},
