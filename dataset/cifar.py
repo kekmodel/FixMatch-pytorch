@@ -93,6 +93,8 @@ def x_u_split(args, labels):
         idx = np.where(labels == i)[0]
         idx = np.random.choice(idx, label_per_class, False)
         labeled_idx.extend(idx)
+    labeled_idx = np.array(labeled_idx)
+    assert len(labeled_idx) == args.num_labeled
 
     if args.num_labeled < args.batch_size:
         num_expand_x = math.ceil(
