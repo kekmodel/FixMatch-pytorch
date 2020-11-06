@@ -22,12 +22,12 @@ class ModelEMA(object):
             esd = self.ema.state_dict()
             for k in self.param_keys:
                 if needs_module:
-                    k = 'module.' + k
-                model_v = msd[k].detach()
+                    j = 'module.' + k
+                model_v = msd[j].detach()
                 ema_v = esd[k]
                 ema_v.copy_(ema_v * self.decay + (1. - self.decay) * model_v)
 
             for k in self.buffer_keys:
                 if needs_module:
-                    k = 'module.' + k
-                esd[k].copy_(msd[k])
+                    j = 'module.' + k
+                esd[k].copy_(msd[j])
