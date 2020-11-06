@@ -40,15 +40,15 @@ tensorboard --logdir=<your out_dir>
 | #Labels | 40 | 250 | 4000 |
 |:---|:---:|:---:|:---:|
 | Paper (RA) | 86.19 ± 3.37 | 94.93 ± 0.65 | 95.74 ± 0.05 |
-| This code | - | - | WIP |
-| Acc. curves | [link] | [link] | [link](https://tensorboard.dev/experiment/14CKs60sQCWSgfew3c07Ig/) |
+| This code | WIP | WIP | WIP |
+| Acc. curve | [link](https://tensorboard.dev/experiment/YcLQA52kQ1KZIgND8bGijw/) | [link](https://tensorboard.dev/experiment/n3Wd14QRTZWEKXlmbQxfvw/) | [link](https://tensorboard.dev/experiment/MX4pVoLmRMuq7VTQV9M8ww/) |
 
 ### CIFAR100
 | #Labels | 400 | 2500 | 10000 |
 |:---|:---:|:---:|:---:|
 |Paper (RA) | 51.15 ± 1.75 | 71.71 ± 0.11 | 77.40 ± 0.12 |
 |This code | - | - | - |
-| Acc. curves | [link] | [link] | [link] |
+| Acc. curve | [link] | [link] | [link] |
 
 ## References
 - [Unofficial PyTorch implementation of MixMatch: A Holistic Approach to Semi-Supervised Learning](https://github.com/YU1ut/MixMatch-pytorch)
