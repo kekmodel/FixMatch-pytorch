@@ -54,6 +54,7 @@ tensorboard --logdir=<your out_dir>
 - [Unofficial PyTorch implementation of MixMatch: A Holistic Approach to Semi-Supervised Learning](https://github.com/YU1ut/MixMatch-pytorch)
 - [Official TensorFlow implementation of FixMatch](https://github.com/google-research/fixmatch)
 - [Unofficial PyTorch Reimplementation of RandAugment](https://github.com/ildoonet/pytorch-randaugment)
+- [PyTorch image models](https://github.com/rwightman/pytorch-image-models)
 
 ## Citations
 ```
