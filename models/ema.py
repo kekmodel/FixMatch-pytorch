@@ -23,6 +23,8 @@ class ModelEMA(object):
             for k in self.param_keys:
                 if needs_module:
                     j = 'module.' + k
+                else:
+                    j = k
                 model_v = msd[j].detach()
                 ema_v = esd[k]
                 esd[k].copy_(ema_v * self.decay + (1. - self.decay) * model_v)
@@ -30,4 +32,6 @@ class ModelEMA(object):
             for k in self.buffer_keys:
                 if needs_module:
                     j = 'module.' + k
+                else:
+                    j = k
                 esd[k].copy_(msd[j])
