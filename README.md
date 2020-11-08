@@ -52,6 +52,10 @@ tensorboard --logdir=<your out_dir>
 
 ## References
 - [Unofficial PyTorch implementation of MixMatch: A Holistic Approach to Semi-Supervised Learning](https://github.com/YU1ut/MixMatch-pytorch)
+- [Official TensorFlow implementation of FixMatch](https://github.com/google-research/fixmatch)
+- [Unofficial PyTorch Reimplementation of RandAugment](https://github.com/ildoonet/pytorch-randaugment)
+
+## Citations
 ```
 @article{sohn2020fixmatch,
     title={FixMatch: Simplifying Semi-Supervised Learning with Consistency and Confidence},
