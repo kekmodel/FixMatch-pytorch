@@ -46,8 +46,8 @@ tensorboard --logdir=<your out_dir>
 ### CIFAR100
 | #Labels | 400 | 2500 | 10000 |
 |:---:|:---:|:---:|:---:|
-|Paper (RA) | 51.15 ± 1.75 | 71.71 ± 0.11 | 77.40 ± 0.12 |
-|This code | - | - | - |
+| Paper (RA) | 51.15 ± 1.75 | 71.71 ± 0.11 | 77.40 ± 0.12 |
+| This code | - | - | - |
 | Acc. curve | - | - | - |
 
 ## References
