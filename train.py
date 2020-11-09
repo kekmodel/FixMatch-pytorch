@@ -300,6 +300,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
     losses = AverageMeter()
     losses_x = AverageMeter()
     losses_u = AverageMeter()
+    mask_probs = AverageMeter()
     end = time.time()
 
     labeled_iter = iter(labeled_trainloader)
@@ -362,7 +363,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
 
             batch_time.update(time.time() - end)
             end = time.time()
-            mask_prob = mask.mean().item()
+            mask_probs.update(mask.mean().item())
             if not args.no_progress:
                 p_bar.set_description("Train Epoch: {epoch}/{epochs:4}. Iter: {batch:4}/{iter:4}. LR: {lr:.4f}. Data: {data:.3f}s. Batch: {bt:.3f}s. Loss: {loss:.4f}. Loss_x: {loss_x:.4f}. Loss_u: {loss_u:.4f}. Mask: {mask:.2f}. ".format(
                     epoch=epoch + 1,
@@ -375,7 +376,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
                     loss=losses.avg,
                     loss_x=losses_x.avg,
                     loss_u=losses_u.avg,
-                    mask=mask_prob))
+                    mask=mask_probs.avg))
                 p_bar.update()
 
         if not args.no_progress:
@@ -392,7 +393,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
             writer.add_scalar('train/1.train_loss', losses.avg, epoch)
             writer.add_scalar('train/2.train_loss_x', losses_x.avg, epoch)
             writer.add_scalar('train/3.train_loss_u', losses_u.avg, epoch)
-            writer.add_scalar('train/4.mask', mask_prob, epoch)
+            writer.add_scalar('train/4.mask', mask_probs.avg, epoch)
             writer.add_scalar('test/1.test_acc', test_acc, epoch)
             writer.add_scalar('test/2.test_loss', test_loss, epoch)
 
