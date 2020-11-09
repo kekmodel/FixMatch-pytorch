@@ -42,7 +42,7 @@ tensorboard --logdir=<your out_dir>
 | Paper (RA) | 86.19 ± 3.37 | 94.93 ± 0.65 | 95.74 ± 0.05 |
 | This code | 93.60 | 94.90 | 95.76 |
 | Acc. curve | [link](https://tensorboard.dev/experiment/YcLQA52kQ1KZIgND8bGijw/) | [link](https://tensorboard.dev/experiment/n3Wd14QRTZWEKXlmbQxfvw/) | [link](https://tensorboard.dev/experiment/MX4pVoLmRMuq7VTQV9M8ww/) |
-
+\* November 2020. Retested after fixing EMA issues.
 ### CIFAR100
 | #Labels | 400 | 2500 | 10000 |
 |:---:|:---:|:---:|:---:|
