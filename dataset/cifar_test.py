@@ -98,12 +98,12 @@ def x_u_split(args, labels):
 
     num_expand_x = math.ceil(
         args.batch_size * args.eval_step / args.num_labeled)
-    num_expand_u = math.ceil(
-        args.batch_size * args.mu * args.eval_step / len(unlabeled_idx))
+    # num_expand_u = math.ceil(
+    #     args.batch_size * args.mu * args.eval_step / len(unlabeled_idx))
     labeled_idx = np.hstack([labeled_idx for _ in range(num_expand_x)])
-    unlabeled_idx = np.hstack([unlabeled_idx for _ in range(num_expand_u)])
+    # unlabeled_idx = np.hstack([unlabeled_idx for _ in range(num_expand_u)])
     np.random.shuffle(labeled_idx)
-    np.random.shuffle(unlabeled_idx)
+    # np.random.shuffle(unlabeled_idx)
     return labeled_idx, unlabeled_idx
 
 
