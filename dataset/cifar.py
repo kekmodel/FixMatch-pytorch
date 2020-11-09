@@ -84,10 +84,11 @@ def get_cifar100(args, root):
     return train_labeled_dataset, train_unlabeled_dataset, test_dataset
 
 
-def x_u_split(args, labels):
+def x_u_split(args, labels, expand_labels=True):
     label_per_class = args.num_labeled // args.num_classes
     labels = np.array(labels)
     labeled_idx = []
+    # unlabeled data: all data
     unlabeled_idx = np.array(range(len(labels)))
     for i in range(args.num_classes):
         idx = np.where(labels == i)[0]
@@ -96,15 +97,11 @@ def x_u_split(args, labels):
     labeled_idx = np.array(labeled_idx)
     assert len(labeled_idx) == args.num_labeled
 
-    if args.num_labeled < args.batch_size:
+    if expand_labels:
         num_expand_x = math.ceil(
             args.batch_size * args.eval_step / args.num_labeled)
-        # num_expand_u = math.ceil(
-        #     args.batch_size * args.mu * args.eval_step / len(unlabeled_idx))
         labeled_idx = np.hstack([labeled_idx for _ in range(num_expand_x)])
-        # unlabeled_idx = np.hstack([unlabeled_idx for _ in range(num_expand_u)])
     np.random.shuffle(labeled_idx)
-    # np.random.shuffle(unlabeled_idx)
     return labeled_idx, unlabeled_idx
 
 
