@@ -48,8 +48,8 @@ tensorboard --logdir=<your out_dir>
 | #Labels | 400 | 2500 | 10000 |
 |:---:|:---:|:---:|:---:|
 | Paper (RA) | 51.15 ± 1.75 | 71.71 ± 0.11 | 77.40 ± 0.12 |
-| This code | - | - | - |
-| Acc. curve | - | - | - |
+| This code | WIP | WIP | WIP |
+| Acc. curve | [link](https://tensorboard.dev/experiment/wrqsXvn6TOmRg1lIREtz5g/) | [link](https://tensorboard.dev/experiment/de1Z5WoRRmGVEYZLOcdnag/) | [link](https://tensorboard.dev/experiment/C44NVEADTBu19p8oTZWD2w/) |
 
 ## References
 - [Official TensorFlow implementation of FixMatch](https://github.com/google-research/fixmatch)
