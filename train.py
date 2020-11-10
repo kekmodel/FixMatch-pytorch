@@ -78,7 +78,7 @@ def main():
                         help='number of labeled data')
     parser.add_argument("--expand-labels", action="store_true",
                         help="expand labels to fit eval steps "
-                        "(train time is reduced, but performance has not been tested)")
+                        "(train time is reduced but performance has not been fully tested)")
     parser.add_argument('--arch', default='wideresnet', type=str,
                         choices=['wideresnet', 'resnext'],
                         help='dataset name')
