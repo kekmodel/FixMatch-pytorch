@@ -25,9 +25,9 @@ python train.py --dataset cifar10 --num-labeled 4000 --arch wideresnet --batch-s
 
 Train the model by 10000 labeled data of CIFAR-100 dataset by using DistributedDataParallel:
 ```
-python -m torch.distributed.launch --nproc_per_node 4 ./train.py --dataset cifar100 --num-labeled 10000 --arch wideresnet --batch-size 16 --lr 0.03 --out results/cifar100@10000
+python -m torch.distributed.launch --nproc_per_node 4 ./train.py --dataset cifar100 --num-labeled 10000 --arch wideresnet --batch-size 16 --lr 0.03 --expand-labels --out results/cifar100@10000
 ```
-\* When using DDP, do not use a seed.
+\* When using DDP, do not use a seed. ([issue](https://github.com/kekmodel/FixMatch-pytorch/issues/5))
 
 ### Monitoring training progress
 ```
