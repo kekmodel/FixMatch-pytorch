@@ -10,6 +10,7 @@ class ModelEMA(object):
         self.ema.eval()
         self.decay = decay
         self.ema_has_module = hasattr(self.ema, 'module')
+        # Fix EMA. https://github.com/valencebond/FixMatch_pytorch thank you!
         self.param_keys = [k for k, _ in self.ema.named_parameters()]
         self.buffer_keys = [k for k, _ in self.ema.named_buffers()]
         for p in self.ema.parameters():
