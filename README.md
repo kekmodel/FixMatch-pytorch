@@ -51,6 +51,8 @@ tensorboard --logdir=<your out_dir>
 | This code | 56.43+ | 72.92+ | 77.42+ |
 | Acc. curve | [link](https://tensorboard.dev/experiment/y4Mmz3hRTQm6rHDlyeso4Q/) | [link](https://tensorboard.dev/experiment/mY3UExn5RpOanO1Hx1vOxg/) | [link](https://tensorboard.dev/experiment/EDb13xzJTWu5leEyVf2qfQ/) |
 
+\* Training by adjusting the value of `--amp --opt_level O2 --wdecay 0.001`
+
 ## References
 - [Official TensorFlow implementation of FixMatch](https://github.com/google-research/fixmatch)
 - [Unofficial PyTorch implementation of MixMatch](https://github.com/YU1ut/MixMatch-pytorch)
