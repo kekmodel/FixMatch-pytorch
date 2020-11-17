@@ -51,7 +51,7 @@ tensorboard --logdir=<your out_dir>
 | This code | 57.50 | 72.93 | 78.12 |
 | Acc. curve | [link](https://tensorboard.dev/experiment/y4Mmz3hRTQm6rHDlyeso4Q/) | [link](https://tensorboard.dev/experiment/mY3UExn5RpOanO1Hx1vOxg/) | [link](https://tensorboard.dev/experiment/EDb13xzJTWu5leEyVf2qfQ/) |
 
-\* Training by adjusting the value of `--amp --opt_level O2 --wdecay 0.001`
+\* Training using the following options `--amp --opt_level O2 --wdecay 0.001`
 
 ## References
 - [Official TensorFlow implementation of FixMatch](https://github.com/google-research/fixmatch)
