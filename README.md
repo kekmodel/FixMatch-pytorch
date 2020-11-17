@@ -48,7 +48,7 @@ tensorboard --logdir=<your out_dir>
 | #Labels | 400 | 2500 | 10000 |
 |:---:|:---:|:---:|:---:|
 | Paper (RA) | 51.15 ± 1.75 | 71.71 ± 0.11 | 77.40 ± 0.12 |
-| This code | 56.43+ | 72.92+ | 77.42+ |
+| This code | 57.50 | 72.93 | 78.12 |
 | Acc. curve | [link](https://tensorboard.dev/experiment/y4Mmz3hRTQm6rHDlyeso4Q/) | [link](https://tensorboard.dev/experiment/mY3UExn5RpOanO1Hx1vOxg/) | [link](https://tensorboard.dev/experiment/EDb13xzJTWu5leEyVf2qfQ/) |
 
 \* Training by adjusting the value of `--amp --opt_level O2 --wdecay 0.001`
