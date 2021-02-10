@@ -3,16 +3,25 @@ This is an unofficial PyTorch implementation of [FixMatch: Simplifying Semi-Supe
 The official Tensorflow implementation is [here](https://github.com/google-research/fixmatch).
 
 This code is only available in FixMatch (RandAugment).
-Now only experiments on CIFAR-10 and CIFAR-100 are available.
 
-## Requirements
-- Python 3.6+
-- PyTorch 1.4
-- torchvision 0.5
-- tensorboard
-- tqdm
-- numpy
-- apex (optional)
+## Results
+
+### CIFAR10
+| #Labels | 40 | 250 | 4000 |
+|:---:|:---:|:---:|:---:|
+| Paper (RA) | 86.19 ± 3.37 | 94.93 ± 0.65 | 95.74 ± 0.05 |
+| This code | 93.60 | 95.31 | 95.77 |
+| Acc. curve | [link](https://tensorboard.dev/experiment/YcLQA52kQ1KZIgND8bGijw/) | [link](https://tensorboard.dev/experiment/GN36hbbRTDaBPy7z8alE1A/) | [link](https://tensorboard.dev/experiment/5flaQd1WQyS727hZ70ebbA/) |
+
+\* November 2020. Retested after fixing EMA issues.
+### CIFAR100
+| #Labels | 400 | 2500 | 10000 |
+|:---:|:---:|:---:|:---:|
+| Paper (RA) | 51.15 ± 1.75 | 71.71 ± 0.11 | 77.40 ± 0.12 |
+| This code | 57.50 | 72.93 | 78.12 |
+| Acc. curve | [link](https://tensorboard.dev/experiment/y4Mmz3hRTQm6rHDlyeso4Q/) | [link](https://tensorboard.dev/experiment/mY3UExn5RpOanO1Hx1vOxg/) | [link](https://tensorboard.dev/experiment/EDb13xzJTWu5leEyVf2qfQ/) |
+
+\* Training using the following options `--amp --opt_level O2 --wdecay 0.001`
 
 ## Usage
 
@@ -33,24 +42,19 @@ python -m torch.distributed.launch --nproc_per_node 4 ./train.py --dataset cifar
 tensorboard --logdir=<your out_dir>
 ```
 
-## Results (Accuracy)
+## Requirements
+- python 3.6+
+- torch 1.4
+- torchvision 0.5
+- tensorboard
+- numpy
+- tqdm
+- apex (optional)
 
-### CIFAR10
-| #Labels | 40 | 250 | 4000 |
-|:---:|:---:|:---:|:---:|
-| Paper (RA) | 86.19 ± 3.37 | 94.93 ± 0.65 | 95.74 ± 0.05 |
-| This code | 93.60 | 95.31 | 95.77 |
-| Acc. curve | [link](https://tensorboard.dev/experiment/YcLQA52kQ1KZIgND8bGijw/) | [link](https://tensorboard.dev/experiment/GN36hbbRTDaBPy7z8alE1A/) | [link](https://tensorboard.dev/experiment/5flaQd1WQyS727hZ70ebbA/) |
+## My other implementations
+- [Meta Pseudo Labels](https://github.com/kekmodel/MPL-pytorch)
+- [UDA for images](https://github.com/kekmodel/UDA-pytorch)
 
-\* November 2020. Retested after fixing EMA issues.
-### CIFAR100
-| #Labels | 400 | 2500 | 10000 |
-|:---:|:---:|:---:|:---:|
-| Paper (RA) | 51.15 ± 1.75 | 71.71 ± 0.11 | 77.40 ± 0.12 |
-| This code | 57.50 | 72.93 | 78.12 |
-| Acc. curve | [link](https://tensorboard.dev/experiment/y4Mmz3hRTQm6rHDlyeso4Q/) | [link](https://tensorboard.dev/experiment/mY3UExn5RpOanO1Hx1vOxg/) | [link](https://tensorboard.dev/experiment/EDb13xzJTWu5leEyVf2qfQ/) |
-
-\* Training using the following options `--amp --opt_level O2 --wdecay 0.001`
 
 ## References
 - [Official TensorFlow implementation of FixMatch](https://github.com/google-research/fixmatch)
