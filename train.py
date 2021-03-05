@@ -177,7 +177,7 @@ def main():
 
     if args.local_rank in [-1, 0]:
         os.makedirs(args.out, exist_ok=True)
-        writer = SummaryWriter(args.out)
+        args.writer = SummaryWriter(args.out)
 
     if args.dataset == 'cifar10':
         args.num_classes = 10
@@ -294,11 +294,11 @@ def main():
 
     model.zero_grad()
     train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
-          model, optimizer, ema_model, scheduler, writer)
+          model, optimizer, ema_model, scheduler)
 
 
 def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
-          model, optimizer, ema_model, scheduler, writer):
+          model, optimizer, ema_model, scheduler):
     if args.amp:
         from apex import amp
     global best_acc
@@ -398,12 +398,12 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
         if args.local_rank in [-1, 0]:
             test_loss, test_acc = test(args, test_loader, test_model, epoch)
 
-            writer.add_scalar('train/1.train_loss', losses.avg, epoch)
-            writer.add_scalar('train/2.train_loss_x', losses_x.avg, epoch)
-            writer.add_scalar('train/3.train_loss_u', losses_u.avg, epoch)
-            writer.add_scalar('train/4.mask', mask_probs.avg, epoch)
-            writer.add_scalar('test/1.test_acc', test_acc, epoch)
-            writer.add_scalar('test/2.test_loss', test_loss, epoch)
+            args.writer.add_scalar('train/1.train_loss', losses.avg, epoch)
+            args.writer.add_scalar('train/2.train_loss_x', losses_x.avg, epoch)
+            args.writer.add_scalar('train/3.train_loss_u', losses_u.avg, epoch)
+            args.writer.add_scalar('train/4.mask', mask_probs.avg, epoch)
+            args.writer.add_scalar('test/1.test_acc', test_acc, epoch)
+            args.writer.add_scalar('test/2.test_loss', test_loss, epoch)
 
             is_best = test_acc > best_acc
             best_acc = max(test_acc, best_acc)
@@ -428,7 +428,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
                 np.mean(test_accs[-20:])))
 
     if args.local_rank in [-1, 0]:
-        writer.close()
+        args.writer.close()
 
 
 def test(args, test_loader, model, epoch):
