@@ -311,11 +311,19 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
     mask_probs = AverageMeter()
     end = time.time()
 
+    if args.world_size > 1:
+        labeled_epoch = 0
+        unlabeled_epoch = 0
+        labeled_trainloader.sampler.set_epoch(labeled_epoch)
+        unlabeled_trainloader.sampler.set_epoch(unlabeled_epoch)
+    
     labeled_iter = iter(labeled_trainloader)
     unlabeled_iter = iter(unlabeled_trainloader)
 
     model.train()
     for epoch in range(args.start_epoch, args.epochs):
+        if args.world_size > 1:
+            
         if not args.no_progress:
             p_bar = tqdm(range(args.eval_step),
                          disable=args.local_rank not in [-1, 0])
@@ -323,12 +331,18 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
             try:
                 inputs_x, targets_x = labeled_iter.next()
             except:
+                if args.world_size > 1:
+                    labeled_epoch += 1
+                    labeled_trainloader.sampler.set_epoch(labeled_epoch)
                 labeled_iter = iter(labeled_trainloader)
                 inputs_x, targets_x = labeled_iter.next()
 
             try:
                 (inputs_u_w, inputs_u_s), _ = unlabeled_iter.next()
             except:
+                if args.world_size > 1:
+                    unlabeled_epoch += 1
+                    unlabeled_trainloader.sampler.set_epoch(unlabeled_epoch)
                 unlabeled_iter = iter(unlabeled_trainloader)
                 (inputs_u_w, inputs_u_s), _ = unlabeled_iter.next()
 
