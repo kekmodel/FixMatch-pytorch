@@ -303,12 +303,6 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
         from apex import amp
     global best_acc
     test_accs = []
-    batch_time = AverageMeter()
-    data_time = AverageMeter()
-    losses = AverageMeter()
-    losses_x = AverageMeter()
-    losses_u = AverageMeter()
-    mask_probs = AverageMeter()
     end = time.time()
 
     if args.world_size > 1:
@@ -316,12 +310,18 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
         unlabeled_epoch = 0
         labeled_trainloader.sampler.set_epoch(labeled_epoch)
         unlabeled_trainloader.sampler.set_epoch(unlabeled_epoch)
-    
+
     labeled_iter = iter(labeled_trainloader)
     unlabeled_iter = iter(unlabeled_trainloader)
 
     model.train()
     for epoch in range(args.start_epoch, args.epochs):
+        batch_time = AverageMeter()
+        data_time = AverageMeter()
+        losses = AverageMeter()
+        losses_x = AverageMeter()
+        losses_u = AverageMeter()
+        mask_probs = AverageMeter()
         if not args.no_progress:
             p_bar = tqdm(range(args.eval_step),
                          disable=args.local_rank not in [-1, 0])
