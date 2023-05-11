@@ -64,10 +64,12 @@ tensorboard --logdir=<your out_dir>
 
 ## Citations
 ```
-@article{sohn2020fixmatch,
-    title={FixMatch: Simplifying Semi-Supervised Learning with Consistency and Confidence},
-    author={Kihyuk Sohn and David Berthelot and Chun-Liang Li and Zizhao Zhang and Nicholas Carlini and Ekin D. Cubuk and Alex Kurakin and Han Zhang and Colin Raffel},
-    journal={arXiv preprint arXiv:2001.07685},
-    year={2020},
+@misc{jd2020fixmatch,
+  author = {Jungdae Kim},
+  title = {PyTorch implementation of FixMatch},
+  year = {2020},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/kekmodel/FixMatch-pytorch}}
 }
 ```
