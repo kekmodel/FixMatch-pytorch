@@ -106,7 +106,7 @@ class WideResNet(nn.Module):
                 nn.init.xavier_normal_(m.weight)
                 nn.init.constant_(m.bias, 0.0)
 
-    def forward(self, x):
+    def forward(self, x): # first::x.shape: (960,3,32,32)
         out = self.conv1(x)
         out = self.block1(out)
         out = self.block2(out)

@@ -1,6 +1,7 @@
 results
 data
-.vscode
+.vscode/
+.idea/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -105,3 +106,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+/result/
+lab.ipynb
+lab_utils.py
